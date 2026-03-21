@@ -3,6 +3,7 @@ import ResultsPanel from "../components/ResultsPanel";
 import CliffChart from "../components/CliffChart";
 import OptimizerCard from "../components/OptimizerCard";
 import AdvisorChat from "../components/AdvisorChat";
+import { optimizeIncome } from "../services/api";
 
 export default function Results() {
   const { state } = useLocation();
@@ -35,9 +36,16 @@ export default function Results() {
           </button>
         </div>
 
-        <CliffChart data={state.results} />
+        <CliffChart
+          data={state.results.net_income_curve?.map((p) => ({
+            gross: p.gross_income,
+            netIncome: p.total_compensation,
+          }))}
+          householdSize={state.formData?.household_size}
+          userIncome={state.formData?.gross_income}
+        />
         <ResultsPanel data={state.results} />
-        <OptimizerCard formData={state.formData} />
+        <OptimizerCard formData={state.formData} optimizeIncome={optimizeIncome} />
         <AdvisorChat results={state.results} formData={state.formData} />
       </div>
     </div>

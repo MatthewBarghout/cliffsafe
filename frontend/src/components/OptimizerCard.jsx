@@ -1,54 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ── Mock data ───────────────────────────────────────────── */
-const MOCK_RESULT = {
-  current_net: 28000,
-  optimized_net: 34820,
-  net_gain: 6820,
-  benefits_retained: 17600,
-  strategy_name: "Pre-tax shelter + hours adjustment",
-  summary:
-    "By contributing to a pre-tax HSA and reducing weekly hours by 2, Marcus stays below the Medicaid cliff and retains $17,600 in annual benefits — netting $6,820 more per year than accepting the raise outright.",
-  steps: [
-    {
-      action: "Contribute $2,850/yr to a Health Savings Account (HSA)",
-      detail:
-        "Reduces taxable income below 138% FPL, preserving Medicaid eligibility. HSA funds roll over and earn interest — this is savings, not sacrifice.",
-      priority: "high",
-      income_adjustment: -2850,
-      benefits_preserved: 7800,
-      net_gain: 4950,
-    },
-    {
-      action: "Reduce weekly hours by 2 (from 40 → 38 hrs/wk)",
-      detail:
-        "Drops gross income by ~$1,400/yr. Combined with the HSA, this keeps you $340 below the Medicaid threshold with a comfortable buffer.",
-      priority: "high",
-      income_adjustment: -1400,
-      benefits_preserved: 7800,
-      net_gain: 6400,
-    },
-    {
-      action: "Request employer-sponsored health coverage evaluation",
-      detail:
-        "If your employer offers a plan with actuarial value ≥ 60%, you lose ACA subsidy eligibility — but employer contributions are tax-free and may exceed the subsidy value.",
-      priority: "medium",
-      income_adjustment: 0,
-      benefits_preserved: 2196,
-      net_gain: 1100,
-    },
-    {
-      action: "Time any raise to start after Medicaid re-enrollment (Oct 1)",
-      detail:
-        "Benefit periods run calendar-year. A raise effective October 1 gives you 9 months of Medicaid at full value before the next eligibility review.",
-      priority: "low",
-      income_adjustment: 3200,
-      benefits_preserved: 5850,
-      net_gain: 870,
-    },
-  ],
-};
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -328,7 +280,7 @@ function StepCard({ step, index }) {
                 paddingTop: 12,
               }}
             >
-              {step.detail}
+              {step.detail ?? "Pre-tax contribution that reduces your reportable income and preserves benefits eligibility."}
             </div>
           </motion.div>
         )}
@@ -433,20 +385,20 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Use mock if no API available (demo mode)
   const handleOptimize = async () => {
     if (loading) return;
     setLoading(true);
     setError(null);
     try {
-      if (optimizeIncome && formData) {
-        const { data } = await optimizeIncome(formData);
-        setResult(data);
-      } else {
-        // Demo / mock mode — simulate latency
-        await new Promise((r) => setTimeout(r, 900));
-        setResult(MOCK_RESULT);
+      const { data } = await optimizeIncome(formData);
+      // Compute benefits_retained from steps if not returned by API
+      if (data.benefits_retained == null) {
+        data.benefits_retained = (data.steps ?? []).reduce(
+          (sum, s) => sum + (s.benefits_preserved ?? 0),
+          0
+        );
       }
+      setResult(data);
     } catch {
       setError("Could not reach the optimizer. Is the backend running?");
     } finally {
@@ -641,7 +593,7 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
             <EmptyState
               onRun={handleOptimize}
               loading={loading}
-              disabled={false}
+              disabled={!optimizeIncome || !formData}
             />
           </motion.div>
         )}
