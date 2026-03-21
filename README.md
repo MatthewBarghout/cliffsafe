@@ -141,7 +141,7 @@ Add your name next to the task you're owning.
 - [ ] `/advisor` endpoint — add empathetic system prompt that uses user's actual cliff numbers — **\_\_\_\_\_\_\_\_**
 - [ ] Error handling + input validation on all routes — **\_\_\_\_\_\_\_\_**
 - [ ] CORS config — allow production frontend URL (Vercel) — **\_\_\_\_\_\_\_\_**
-- [ ] Deploy backend to Railway — **\_\_\_\_\_\_\_\_**
+
 
 ### Frontend
 - [ ] Home page — hero section with tagline and CTA — **\_\_\_\_\_\_\_\_**
@@ -150,10 +150,4 @@ Add your name next to the task you're owning.
 - [ ] Animated cliff drop on chart (Framer Motion) — **\_\_\_\_\_\_\_\_**
 - [ ] Color coding — green (safe zone) / red (cliff zone) on chart — **\_\_\_\_\_\_\_\_**
 - [ ] "Share your results" copy-to-clipboard or screenshot — **\_\_\_\_\_\_\_\_**
-- [ ] Deploy frontend to Vercel — **\_\_\_\_\_\_\_\_**
 
-### Demo & Story
-- [ ] Demo script — Marcus scenario (gig worker, NC, $28k) full walkthrough — **\_\_\_\_\_\_\_\_**
-- [ ] Seed hardcoded Marcus demo data so the live demo never fails — **\_\_\_\_\_\_\_\_**
-- [ ] One-sentence pitch rehearsed by everyone on the team — **\_\_\_\_\_\_\_\_**
-- [ ] End-to-end test of full demo flow before judging — **\_\_\_\_\_\_\_\_**
