@@ -138,7 +138,7 @@ Add your name next to the task you're owning.
 - [ ] Mobile-responsive layout — **\_\_\_\_\_\_\_\_**
 
 ### Backend
-- [ ] `/advisor` endpoint — add empathetic system prompt that uses user's actual cliff numbers — **\_\_\_\_\_\_\_\_**
+- [ Juan] `/advisor` endpoint — add empathetic system prompt that uses user's actual cliff numbers — **\_\_\_\_\_\_\_\_**
 - [ ] Error handling + input validation on all routes — **\_\_\_\_\_\_\_\_**
 - [ ] CORS config — allow production frontend URL (Vercel) — **\_\_\_\_\_\_\_\_**
 
