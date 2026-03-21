@@ -1,120 +1,651 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { optimizeIncome } from "../services/api";
+import { motion, AnimatePresence } from "framer-motion";
 
-function fmt(n) {
-  return new Intl.NumberFormat("en-US", {
+/* ── Mock data ───────────────────────────────────────────── */
+const MOCK_RESULT = {
+  current_net: 28000,
+  optimized_net: 34820,
+  net_gain: 6820,
+  benefits_retained: 17600,
+  strategy_name: "Pre-tax shelter + hours adjustment",
+  summary:
+    "By contributing to a pre-tax HSA and reducing weekly hours by 2, Marcus stays below the Medicaid cliff and retains $17,600 in annual benefits — netting $6,820 more per year than accepting the raise outright.",
+  steps: [
+    {
+      action: "Contribute $2,850/yr to a Health Savings Account (HSA)",
+      detail:
+        "Reduces taxable income below 138% FPL, preserving Medicaid eligibility. HSA funds roll over and earn interest — this is savings, not sacrifice.",
+      priority: "high",
+      income_adjustment: -2850,
+      benefits_preserved: 7800,
+      net_gain: 4950,
+    },
+    {
+      action: "Reduce weekly hours by 2 (from 40 → 38 hrs/wk)",
+      detail:
+        "Drops gross income by ~$1,400/yr. Combined with the HSA, this keeps you $340 below the Medicaid threshold with a comfortable buffer.",
+      priority: "high",
+      income_adjustment: -1400,
+      benefits_preserved: 7800,
+      net_gain: 6400,
+    },
+    {
+      action: "Request employer-sponsored health coverage evaluation",
+      detail:
+        "If your employer offers a plan with actuarial value ≥ 60%, you lose ACA subsidy eligibility — but employer contributions are tax-free and may exceed the subsidy value.",
+      priority: "medium",
+      income_adjustment: 0,
+      benefits_preserved: 2196,
+      net_gain: 1100,
+    },
+    {
+      action: "Time any raise to start after Medicaid re-enrollment (Oct 1)",
+      detail:
+        "Benefit periods run calendar-year. A raise effective October 1 gives you 9 months of Medicaid at full value before the next eligibility review.",
+      priority: "low",
+      income_adjustment: 3200,
+      benefits_preserved: 5850,
+      net_gain: 870,
+    },
+  ],
+};
+
+/* ── Helpers ─────────────────────────────────────────────── */
+const fmt = (n) =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
-}
 
-const PRIORITY_COLORS = {
-  high: "bg-safe-100 text-safe-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  low: "bg-gray-100 text-gray-600",
+const PRIORITY = {
+  high: {
+    label: "High priority",
+    color: "#0F6E56",
+    bg: "rgba(29,158,117,0.1)",
+    dot: "#1D9E75",
+  },
+  medium: {
+    label: "Medium",
+    color: "#854F0B",
+    bg: "rgba(239,159,39,0.1)",
+    dot: "#EF9F27",
+  },
+  low: {
+    label: "Low",
+    color: "#5F5E5A",
+    bg: "rgba(136,135,128,0.1)",
+    dot: "#888780",
+  },
 };
 
-export default function OptimizerCard({ formData }) {
+const STAGGER = {
+  container: {
+    animate: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+  },
+  item: {
+    initial: { opacity: 0, y: 12 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: "easeOut" },
+    },
+  },
+};
+
+/* ── Net gain counter ────────────────────────────────────── */
+function GainMetric({ label, value, accent, sub }) {
+  return (
+    <div
+      style={{
+        background: "var(--color-background-secondary)",
+        borderRadius: "var(--border-radius-md)",
+        padding: "1rem 1.1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {accent && (
+        <span
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 3,
+            height: "100%",
+            background: accent,
+            borderRadius: "4px 0 0 4px",
+          }}
+        />
+      )}
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 500,
+          color: "var(--color-text-tertiary)",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          paddingLeft: accent ? 8 : 0,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontSize: 22,
+          fontWeight: 500,
+          color: accent ?? "var(--color-text-primary)",
+          paddingLeft: accent ? 8 : 0,
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </span>
+      {sub && (
+        <span
+          style={{
+            fontSize: 12,
+            color: "var(--color-text-tertiary)",
+            paddingLeft: accent ? 8 : 0,
+          }}
+        >
+          {sub}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ── Step card ───────────────────────────────────────────── */
+function StepCard({ step, index }) {
+  const [expanded, setExpanded] = useState(false);
+  const p = PRIORITY[step.priority] ?? PRIORITY.low;
+  const isPositiveAdj = step.income_adjustment >= 0;
+
+  return (
+    <motion.div
+      variants={STAGGER.item}
+      style={{
+        border: "0.5px solid var(--color-border-secondary)",
+        borderRadius: "var(--border-radius-md)",
+        overflow: "hidden",
+        background: "var(--color-background-primary)",
+      }}
+    >
+      {/* Step header — always visible */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 14,
+          padding: "14px 16px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        {/* Step number */}
+        <span
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: p.bg,
+            color: p.color,
+            fontSize: 12,
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            marginTop: 1,
+          }}
+        >
+          {index + 1}
+        </span>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+          {/* Action + priority badge */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color: "var(--color-text-primary)",
+                lineHeight: 1.4,
+                flex: 1,
+              }}
+            >
+              {step.action}
+            </span>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 11,
+                fontWeight: 500,
+                padding: "3px 9px",
+                borderRadius: 99,
+                background: p.bg,
+                color: p.color,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: p.dot,
+                }}
+              />
+              {p.label}
+            </span>
+          </div>
+
+          {/* Metrics row */}
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              flexWrap: "wrap",
+              fontSize: 12,
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            <span>
+              Income adj:{" "}
+              <strong
+                style={{
+                  fontWeight: 500,
+                  color: isPositiveAdj ? "#1D9E75" : "#E24B4A",
+                }}
+              >
+                {isPositiveAdj ? "+" : ""}
+                {fmt(step.income_adjustment)}
+              </strong>
+            </span>
+            <span>
+              Benefits retained:{" "}
+              <strong style={{ fontWeight: 500, color: "#1D9E75" }}>
+                {fmt(step.benefits_preserved)}
+              </strong>
+            </span>
+            <span>
+              Net gain:{" "}
+              <strong style={{ fontWeight: 500, color: "#1D9E75" }}>
+                +{fmt(step.net_gain)}
+              </strong>
+            </span>
+            <span
+              style={{
+                marginLeft: "auto",
+                color: "var(--color-text-tertiary)",
+                fontSize: 11,
+              }}
+            >
+              {expanded ? "▲ less" : "▼ more"}
+            </span>
+          </div>
+        </div>
+      </button>
+
+      {/* Expanded detail */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="detail"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <div
+              style={{
+                padding: "0 16px 14px 54px",
+                fontSize: 13,
+                color: "var(--color-text-secondary)",
+                lineHeight: 1.65,
+                borderTop: "0.5px solid var(--color-border-tertiary)",
+                paddingTop: 12,
+              }}
+            >
+              {step.detail}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+function EmptyState({ onRun, loading, disabled }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        padding: "2.5rem 1rem",
+        borderRadius: "var(--border-radius-md)",
+        background: "var(--color-background-secondary)",
+        textAlign: "center",
+      }}
+    >
+      {/* Icon */}
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 32 32"
+        fill="none"
+        style={{ color: "var(--color-text-tertiary)" }}
+      >
+        <path
+          d="M6 24l6-8 5 5 4-6 5 9"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle
+          cx="24"
+          cy="8"
+          r="4"
+          stroke="#1D9E75"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M22.5 8h3M24 6.5v3"
+          stroke="#1D9E75"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+      <div>
+        <p
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: "var(--color-text-primary)",
+            margin: 0,
+          }}
+        >
+          Run the optimizer
+        </p>
+        <p
+          style={{
+            fontSize: 13,
+            color: "var(--color-text-secondary)",
+            margin: "4px 0 0",
+          }}
+        >
+          We'll find strategies to maximize your real net income without
+          losing benefits.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onRun}
+        disabled={loading || disabled}
+        style={{
+          marginTop: 4,
+          padding: "10px 24px",
+          fontSize: 14,
+          fontWeight: 500,
+          borderRadius: "var(--border-radius-md)",
+          border: "none",
+          background: disabled || loading ? "var(--color-background-secondary)" : "#1D9E75",
+          color: disabled || loading ? "var(--color-text-tertiary)" : "#fff",
+          cursor: disabled || loading ? "default" : "pointer",
+          transition: "background 0.15s",
+        }}
+      >
+        {loading ? "Optimizing…" : "Find my best strategy →"}
+      </button>
+    </div>
+  );
+}
+
+/* ── Main component ──────────────────────────────────────── */
+export default function OptimizerCard({ formData, optimizeIncome }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Use mock if no API available (demo mode)
   const handleOptimize = async () => {
-    if (!formData) return;
+    if (loading) return;
     setLoading(true);
     setError(null);
     try {
-      const { data } = await optimizeIncome(formData);
-      setResult(data);
+      if (optimizeIncome && formData) {
+        const { data } = await optimizeIncome(formData);
+        setResult(data);
+      } else {
+        // Demo / mock mode — simulate latency
+        await new Promise((r) => setTimeout(r, 900));
+        setResult(MOCK_RESULT);
+      }
     } catch {
-      setError("Could not fetch optimization. Is the backend running?");
+      setError("Could not reach the optimizer. Is the backend running?");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-8 space-y-6 w-full">
-      <div className="flex items-center justify-between">
+    <div
+      style={{
+        background: "var(--color-background-primary)",
+        borderRadius: "var(--border-radius-lg)",
+        border: "0.5px solid var(--color-border-tertiary)",
+        padding: "2rem",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "1.5rem",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* ── Header ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <div>
-          <h2 className="text-2xl font-bold text-cliff-900">Income Optimizer</h2>
-          <p className="text-gray-500 text-sm mt-1">
-            See how pre-tax strategies can keep you benefit-eligible.
+          <h2
+            style={{
+              fontSize: 20,
+              fontWeight: 500,
+              color: "var(--color-text-primary)",
+              margin: 0,
+            }}
+          >
+            Income optimizer
+          </h2>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--color-text-secondary)",
+              margin: "4px 0 0",
+            }}
+          >
+            Pre-tax strategies to keep you benefit-eligible while earning more.
           </p>
         </div>
-        <button
-          onClick={handleOptimize}
-          disabled={loading || !formData}
-          className="bg-safe-500 hover:bg-safe-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors disabled:opacity-50 text-sm"
-        >
-          {loading ? "Optimizing…" : "Run Optimizer"}
-        </button>
+
+        {result && (
+          <button
+            type="button"
+            onClick={handleOptimize}
+            disabled={loading}
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: "var(--border-radius-md)",
+              border: "0.5px solid var(--color-border-secondary)",
+              background: "var(--color-background-secondary)",
+              color: "var(--color-text-secondary)",
+              cursor: loading ? "default" : "pointer",
+            }}
+          >
+            {loading ? "Recalculating…" : "Recalculate"}
+          </button>
+        )}
       </div>
 
+      {/* ── Error ── */}
       {error && (
-        <p className="text-danger-500 text-sm">{error}</p>
-      )}
-
-      {result && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-5"
+        <div
+          style={{
+            padding: "10px 14px",
+            borderRadius: "var(--border-radius-md)",
+            background: "rgba(226,75,74,0.08)",
+            border: "0.5px solid rgba(226,75,74,0.25)",
+            fontSize: 13,
+            color: "#A32D2D",
+          }}
         >
-          {/* Net gain summary */}
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: "Current Net", value: fmt(result.current_net) },
-              { label: "Optimized Net", value: fmt(result.optimized_net), color: "text-safe-600" },
-              { label: "Net Gain", value: `+${fmt(result.net_gain)}`, color: "text-safe-600" },
-            ].map(({ label, value, color = "text-cliff-900" }) => (
-              <div key={label} className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-                <p className={`text-xl font-bold ${color} mt-1`}>{value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Strategy name */}
-          <div>
-            <p className="text-xs font-semibold text-cliff-600 uppercase tracking-wide">
-              Strategy: {result.strategy_name}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">{result.summary}</p>
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-3">
-            {result.steps.map((step, i) => (
-              <div key={i} className="border border-gray-100 rounded-xl p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-medium text-gray-800">{step.action}</p>
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                      PRIORITY_COLORS[step.priority] || PRIORITY_COLORS.low
-                    }`}
-                  >
-                    {step.priority} priority
-                  </span>
-                </div>
-                <div className="flex gap-6 mt-2 text-xs text-gray-500">
-                  <span>Income adj: {fmt(step.income_adjustment)}</span>
-                  <span>Benefits preserved: {fmt(step.benefits_preserved)}</span>
-                  <span className="text-safe-600 font-semibold">Net gain: +{fmt(step.net_gain)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {!result && !loading && (
-        <div className="bg-gray-50 rounded-xl p-6 text-center text-gray-400 text-sm">
-          Run the optimizer to see recommended strategies for your income level.
+          {error}
         </div>
       )}
+
+      {/* ── Results ── */}
+      <AnimatePresence mode="wait">
+        {result ? (
+          <motion.div
+            key="results"
+            initial="initial"
+            animate="animate"
+            variants={STAGGER.container}
+            style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+          >
+            {/* Metric row */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <GainMetric
+                label="Current net"
+                value={fmt(result.current_net)}
+              />
+              <GainMetric
+                label="Optimized net"
+                value={fmt(result.optimized_net)}
+                accent="#1D9E75"
+                sub="gross + retained benefits"
+              />
+              <GainMetric
+                label="Net gain"
+                value={`+${fmt(result.net_gain)}`}
+                accent="#1D9E75"
+                sub="per year"
+              />
+              <GainMetric
+                label="Benefits retained"
+                value={fmt(result.benefits_retained)}
+                accent="#378ADD"
+              />
+            </div>
+
+            {/* Strategy summary */}
+            <motion.div
+              variants={STAGGER.item}
+              style={{
+                borderLeft: "3px solid #1D9E75",
+                background: "rgba(29,158,117,0.06)",
+                borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                padding: "12px 16px",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#0F6E56",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: 5,
+                }}
+              >
+                Strategy — {result.strategy_name}
+              </p>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--color-text-secondary)",
+                  margin: 0,
+                  lineHeight: 1.65,
+                }}
+              >
+                {result.summary}
+              </p>
+            </motion.div>
+
+            {/* Step cards */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--color-text-tertiary)",
+                  marginBottom: 2,
+                }}
+              >
+                Action steps — click to expand
+              </p>
+              {result.steps.map((step, i) => (
+                <StepCard key={i} step={step} index={i} />
+              ))}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <EmptyState
+              onRun={handleOptimize}
+              loading={loading}
+              disabled={false}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
