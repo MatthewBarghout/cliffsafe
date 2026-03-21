@@ -15,9 +15,13 @@ export default function Calculator() {
       const { data } = await calculateCliff(formData);
       navigate("/results", { state: { results: data, formData } });
     } catch (err) {
+      const detail = err.response?.data?.detail;
       setError(
-        err.response?.data?.detail ||
-          "Failed to connect to the backend. Make sure the API is running."
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+          ? detail[0]?.msg ?? "Validation error"
+          : "Failed to connect to the backend. Make sure the API is running."
       );
     } finally {
       setLoading(false);
