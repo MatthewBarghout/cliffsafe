@@ -29,6 +29,7 @@ const US_STATES = [
   { abbr: "WI", name: "Wisconsin" }, { abbr: "WY", name: "Wyoming" },
 ];
 
+// Values must match backend EmploymentType enum: full_time, part_time, self_employed, seasonal
 const EMPLOYMENT_TYPES = [
   {
     value: "full_time",
@@ -54,23 +55,12 @@ const EMPLOYMENT_TYPES = [
     ),
   },
   {
-    value: "gig",
-    label: "Gig worker",
-    sublabel: "Rideshare, delivery, freelance",
+    value: "self_employed",
+    label: "Gig / Self-employed",
+    sublabel: "Rideshare, freelance, contractor",
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
         <path d="M3 13l4-4 3 3 4-5 3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-  },
-  {
-    value: "self_employed",
-    label: "Self-employed",
-    sublabel: "Business owner, contractor",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -263,7 +253,7 @@ export default function IncomeForm({ onSubmit, loading }) {
     gross_income: "",
     household_size: "1",
     state: "NC",
-    employment_type: "gig",
+    employment_type: "self_employed",
   });
 
   const handleChange = (e) =>
