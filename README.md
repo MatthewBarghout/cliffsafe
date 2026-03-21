@@ -188,7 +188,7 @@ data: [DONE]
 - [ ] `IncomeForm.jsx` — form polish, state dropdown, employment type selector
 - [ ] `ResultsPanel.jsx` — display cliff points, benefits lost, effective marginal rate
 - [ ] `OptimizerCard.jsx` — display optimization steps and net gain
-- [ ] Home page — hero section with tagline and CTA
+- [x] Home page — hero section with tagline and CTA
 - [ ] Loading states / skeleton UI while waiting on API
 - [ ] Error state UI if API call fails
 - [ ] Animated cliff drop on chart (Framer Motion)
