@@ -99,25 +99,49 @@ async def optimize(req: OptimizeRequest):
         if step:
             steps.append(step)
 
-    # If no steps were generated (user is already at/below optimal or near-optimal),
-    # show an informational step.
+    # If no steps were generated, explain the situation honestly.
     if not steps:
-        below_cliff = not cliffs or gross < cliffs[0]["income_level"]
-        if below_cliff:
+        above_cliff = cliffs and gross >= cliffs[0]["income_level"]
+        if above_cliff:
+            # User is past a cliff but pre-tax contributions can't bridge the gap —
+            # they're already at the break-even point or beyond. Earning more is
+            # the right move, not earning less.
+            next_cliff = next((c for c in cliffs if c["income_level"] > gross), None)
+            if next_cliff:
+                gap = next_cliff["income_level"] - gross
+                action = (
+                    f"Keep earning — you've passed the break-even point on the last cliff. "
+                    f"Watch the next cliff at ${next_cliff['income_level']:,.0f} "
+                    f"(${gap:,.0f} away). Pre-tax contributions can protect you as you approach it."
+                )
+            else:
+                action = (
+                    "You've passed the break-even point — your total compensation is now growing "
+                    "with income. Keep earning and use pre-tax contributions to reduce tax burden."
+                )
             steps.append(OptimizationStep(
-                action="Your income is currently below the nearest benefits cliff",
+                action=action,
                 income_adjustment=0.0,
                 benefits_preserved=0.0,
                 net_gain=0.0,
                 priority="low",
             ))
         else:
+            next_cliff = cliffs[0] if cliffs else None
+            if next_cliff:
+                gap = next_cliff["income_level"] - gross
+                action = (
+                    f"You're ${gap:,.0f} below the nearest cliff at ${next_cliff['income_level']:,.0f}. "
+                    f"Start pre-tax contributions now to protect your benefits as income grows."
+                )
+            else:
+                action = "No benefits cliffs detected for your profile — you're in a safe zone."
             steps.append(OptimizationStep(
-                action="Consider limiting additional hours to stay below the benefits cliff",
+                action=action,
                 income_adjustment=0.0,
-                benefits_preserved=round(current_benefits["total"], 2),
+                benefits_preserved=0.0,
                 net_gain=0.0,
-                priority="medium",
+                priority="low",
             ))
 
     # Compute final optimized totals
