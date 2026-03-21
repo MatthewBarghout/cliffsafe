@@ -181,6 +181,7 @@ data: [DONE]
 - [x] `/advisor` endpoint — Gemini API streaming via SSE
 - [x] Wire real calc logic into `/calculate` route — net income curve + cliff detection
 - [x] `POST /api/monte-carlo` route
+- [x] `POST /api/optimize` — replaced hardcoded mock with real optimizer wired to `cliff_engine.py`: scans income curve to find the optimal reportable income (max total compensation), generates sized IRA/401(k)/SEP-IRA/FSA steps with real `benefits_preserved` and `net_gain` computed from actual benefit math, handles self-employed (SEP-IRA) and `has_children` (Dependent Care FSA) scenarios
 
 ### Frontend
 - [ ] `CliffChart.jsx` — Recharts line chart showing income vs net compensation curve with cliff drop
