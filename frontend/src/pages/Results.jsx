@@ -144,10 +144,17 @@ export default function Results() {
               transition={{ duration: 0.45 }}
               style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
             >
-              <CliffChart data={state.results} />
+              <CliffChart
+                data={state.results.net_income_curve?.map((p) => ({
+                  gross: p.gross_income,
+                  netIncome: p.total_compensation,
+                }))}
+                householdSize={state.formData?.household_size}
+                userIncome={state.formData?.gross_income}
+              />
               <ResultsPanel data={state.results} />
               <OptimizerCard formData={state.formData} />
-              <AdvisorChat />
+              <AdvisorChat results={state.results} formData={state.formData} />
             </motion.div>
           )}
         </AnimatePresence>
