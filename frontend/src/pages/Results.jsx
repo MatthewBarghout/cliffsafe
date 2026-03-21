@@ -38,7 +38,7 @@ export default function Results() {
         <CliffChart data={state.results} />
         <ResultsPanel data={state.results} />
         <OptimizerCard formData={state.formData} />
-        <AdvisorChat />
+        <AdvisorChat results={state.results} formData={state.formData} />
       </div>
     </div>
   );
