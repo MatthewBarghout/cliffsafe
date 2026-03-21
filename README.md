@@ -169,10 +169,10 @@ data: [DONE]
 
 ---
 
-### Backend
-- [ Juan] `/advisor` endpoint — add empathetic system prompt that uses user's actual cliff numbers — **\_\_\_\_\_\_\_\_**
-- [ ] Error handling + input validation on all routes — **\_\_\_\_\_\_\_\_**
-- [ ] CORS config — allow production frontend URL (Vercel) — **\_\_\_\_\_\_\_\_**
+### Backend ✅ Complete (continued)
+- [x] `/advisor` endpoint — empathetic system prompt using user's actual cliff numbers
+- [x] Error handling + input validation on all routes
+- [x] CORS config — allow production frontend URL (Vercel)
 
 ### Backend ✅ Complete
 - [x] Real cliff math in `cliff_engine.py` — 2025 FPL-based thresholds, SNAP phase-out curves
