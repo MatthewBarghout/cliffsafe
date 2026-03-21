@@ -1,4 +1,4 @@
-mport { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const US_STATES = [
