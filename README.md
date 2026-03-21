@@ -191,7 +191,7 @@ data: [DONE]
 - [ ] `OptimizerCard.jsx` — display optimization steps and net gain
 - [x] Home page — hero section with tagline and CTA
 - [ ] Loading states / skeleton UI while waiting on API
-- [ ] Error state UI if API call fails
+- [x] Error state UI if API call fails
 - [ ] Animated cliff drop on chart (Framer Motion)
 - [ ] Color coding — green (safe zone) / red (cliff zone) on chart
 - [ ] Mobile-responsive layout
