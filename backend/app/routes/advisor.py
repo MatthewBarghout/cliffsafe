@@ -129,7 +129,7 @@ async def _stream_advisor(prompt: str) -> AsyncGenerator[str, None]:
     model = genai.GenerativeModel(
         model_name="gemini-2.5-flash",
         generation_config=genai.types.GenerationConfig(
-            max_output_tokens=2048,
+            max_output_tokens=8192,
             temperature=0.7,
         ),
     )

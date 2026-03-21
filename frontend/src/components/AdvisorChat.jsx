@@ -100,6 +100,27 @@ export default function AdvisorChat({ results, formData }) {
           }
         }
       }
+
+      // Flush any partial chunk left in buffer after stream closes
+      buffer += decoder.decode(); // flush TextDecoder
+      if (buffer.startsWith("data: ")) {
+        const data = buffer.slice(6).trim();
+        if (data && data !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "advisor") {
+                  updated[updated.length - 1] = { ...last, text: last.text + parsed.text, loading: false };
+                }
+                return updated;
+              });
+            }
+          } catch {}
+        }
+      }
     } catch (err) {
       setMessages((prev) => {
         const updated = [...prev];

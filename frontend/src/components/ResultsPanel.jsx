@@ -533,7 +533,11 @@ export default function ResultsPanel({ data, monteCarlo }) {
                 ? `${Math.round(monteCarlo.cliff_probability * 100)}%`
                 : "—"
             }
-            sub={monteCarlo ? "Monte Carlo · 1,000 sims" : "calculating…"}
+            sub={
+              monteCarlo
+                ? `${Math.round(monteCarlo.cliff_probability * 100)}% chance income volatility pushes you across a cliff · 1,000 simulations`
+                : "Running 1,000 income simulations…"
+            }
             accent={
               monteCarlo
                 ? monteCarlo.cliff_probability >= 0.6

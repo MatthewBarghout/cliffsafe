@@ -21,7 +21,7 @@ const FEATURES = [
   {
     icon: "💬",
     title: "Ask an Advisor",
-    desc: "Chat with a Claude-powered advisor that explains your situation in plain language.",
+    desc: "Chat with a Gemini-powered advisor that explains your situation in plain language.",
   },
 ];
 
