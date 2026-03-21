@@ -10,13 +10,16 @@ class EmploymentType(str, Enum):
     seasonal = "seasonal"
 
 
-# --- Request schemas ---
+# ---------------------------------------------------------------------------
+# Request schemas
+# ---------------------------------------------------------------------------
 
 class CalculationRequest(BaseModel):
     gross_income: float
     household_size: int
     state: str
     employment_type: EmploymentType
+    has_children: bool = False
 
 
 class OptimizeRequest(BaseModel):
@@ -24,10 +27,35 @@ class OptimizeRequest(BaseModel):
     household_size: int
     state: str
     employment_type: EmploymentType
+    has_children: bool = False
     target_income: Optional[float] = None
 
 
-# --- Response schemas ---
+class MonteCarloRequest(BaseModel):
+    gross_income: float
+    household_size: int
+    state: str
+    employment_type: EmploymentType
+    has_children: bool = False
+    n_simulations: int = 1000
+
+
+class AdvisorRequest(BaseModel):
+    gross_income: float
+    household_size: int
+    state: str
+    employment_type: EmploymentType
+    has_children: bool = False
+    # Pre-computed results to inject into the prompt (optional shortcut)
+    cliff_points: Optional[List[dict]] = None
+    total_benefits: Optional[float] = None
+    cliff_probability: Optional[float] = None
+    user_question: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Response schemas
+# ---------------------------------------------------------------------------
 
 class BenefitDetail(BaseModel):
     name: str
@@ -44,6 +72,17 @@ class CliffPoint(BaseModel):
     description: str
 
 
+class NetIncomeCurvePoint(BaseModel):
+    gross_income: float
+    net_take_home: float
+    snap: float
+    medicaid: float
+    housing: float
+    childcare: float
+    total_benefits: float
+    total_compensation: float
+
+
 class CalculationResponse(BaseModel):
     gross_income: float
     net_income: float
@@ -53,6 +92,7 @@ class CalculationResponse(BaseModel):
     benefits: List[BenefitDetail]
     effective_marginal_rate: float
     recommendation: str
+    net_income_curve: List[NetIncomeCurvePoint] = []
 
 
 class BenefitsResponse(BaseModel):
@@ -84,3 +124,16 @@ class OptimizeResponse(BaseModel):
     strategy_name: str
     steps: List[OptimizationStep]
     summary: str
+
+
+class MonteCarloResponse(BaseModel):
+    cliff_probability: float
+    expected_annual_benefits_loss: float
+    simulated_income_mean: float
+    income_ci_low: float
+    income_ci_high: float
+    n_simulations: int
+    employment_type: str
+    income_sigma: float
+    cliff_thresholds: List[float]
+    interpretation: str
