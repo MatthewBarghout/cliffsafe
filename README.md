@@ -181,7 +181,7 @@ data: [DONE]
 
 ### Frontend
 - [ ] `CliffChart.jsx` — Recharts line chart showing income vs net compensation curve with cliff drop
-- [ ] `AdvisorChat.jsx` — SSE streaming UI for Gemini advisor response
+- [x] `AdvisorChat.jsx` — SSE streaming UI for Gemini advisor response
 - [ ] `IncomeForm.jsx` — form polish, state dropdown, employment type selector
 - [ ] `ResultsPanel.jsx` — display cliff points, benefits lost, effective marginal rate
 - [ ] `OptimizerCard.jsx` — display optimization steps and net gain
