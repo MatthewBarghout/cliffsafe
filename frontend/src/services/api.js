@@ -10,5 +10,6 @@ export const calculateCliff = (payload) => api.post("/calculate", payload);
 export const getBenefits = (state, householdSize) =>
   api.get(`/benefits/${state}/${householdSize}`);
 export const optimizeIncome = (payload) => api.post("/optimize", payload);
+export const runMonteCarlo = (payload) => api.post("/monte-carlo", payload);
 
 export default api;

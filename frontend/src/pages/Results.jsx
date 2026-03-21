@@ -6,20 +6,28 @@ import CliffChart from "../components/CliffChart";
 import OptimizerCard from "../components/OptimizerCard";
 import AdvisorChat from "../components/AdvisorChat";
 import { ResultsSkeleton } from "../components/Loading";
+import { optimizeIncome, runMonteCarlo } from "../services/api";
 
 export default function Results() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [monteCarlo, setMonteCarlo] = useState(null);
 
-  // Brief delay so skeleton is visible on fast connections too.
-  // In production, gate `ready` on any secondary async fetches instead.
   useEffect(() => {
     if (state?.results) {
       const t = setTimeout(() => setReady(true), 900);
       return () => clearTimeout(t);
     }
   }, [state]);
+
+  // Run Monte Carlo in the background after results load
+  useEffect(() => {
+    if (!state?.formData) return;
+    runMonteCarlo(state.formData)
+      .then(({ data }) => setMonteCarlo(data))
+      .catch(() => {}); // non-critical, fail silently
+  }, [state?.formData]);
 
   // ── Empty state ──────────────────────────────────────────────────────────────
   if (!state?.results) {
@@ -152,8 +160,8 @@ export default function Results() {
                 householdSize={state.formData?.household_size}
                 userIncome={state.formData?.gross_income}
               />
-              <ResultsPanel data={state.results} />
-              <OptimizerCard formData={state.formData} />
+              <ResultsPanel data={state.results} monteCarlo={monteCarlo} />
+              <OptimizerCard formData={state.formData} optimizeIncome={optimizeIncome} />
               <AdvisorChat results={state.results} formData={state.formData} />
             </motion.div>
           )}

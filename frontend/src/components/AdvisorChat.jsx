@@ -6,13 +6,13 @@ export default function AdvisorChat({ results, formData }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [autoSummaryDone, setAutoSummaryDone] = useState(false);
+  const autoSummaryRef = useRef(false); // useRef prevents double-fire in React StrictMode
   const bottomRef = useRef(null);
 
   // Auto-run cliff summary as soon as component mounts with results
   useEffect(() => {
-    if (results && formData && !autoSummaryDone) {
-      setAutoSummaryDone(true);
+    if (results && formData && !autoSummaryRef.current) {
+      autoSummaryRef.current = true;
       runAdvisor(null);
     }
   }, [results, formData]);
@@ -63,10 +63,11 @@ export default function AdvisorChat({ results, formData }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let done = false;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      while (!done) {
+        const { done: streamDone, value } = await reader.read();
+        if (streamDone) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -75,7 +76,7 @@ export default function AdvisorChat({ results, formData }) {
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
-          if (data === "[DONE]") break;
+          if (data === "[DONE]") { done = true; break; }
 
           try {
             const parsed = JSON.parse(data);

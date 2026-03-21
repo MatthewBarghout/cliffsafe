@@ -441,7 +441,7 @@ function SectionHeader({ title, count }) {
 }
 
 /* ── Main component ──────────────────────────────────────── */
-export default function ResultsPanel({ data }) {
+export default function ResultsPanel({ data, monteCarlo }) {
   const d = data ?? MOCK_DATA;
 
   const cliffCount = d.cliff_points?.length ?? 0;
@@ -525,6 +525,24 @@ export default function ResultsPanel({ data }) {
             label="Net income"
             value={fmt(d.net_income)}
             accent={headlineColor}
+          />
+          <MetricCard
+            label="Cliff risk this year"
+            value={
+              monteCarlo
+                ? `${Math.round(monteCarlo.cliff_probability * 100)}%`
+                : "—"
+            }
+            sub={monteCarlo ? "Monte Carlo · 1,000 sims" : "calculating…"}
+            accent={
+              monteCarlo
+                ? monteCarlo.cliff_probability >= 0.6
+                  ? "#E24B4A"
+                  : monteCarlo.cliff_probability >= 0.3
+                  ? "#854F0B"
+                  : "#0F6E56"
+                : undefined
+            }
           />
         </div>
 
