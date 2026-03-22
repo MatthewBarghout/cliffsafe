@@ -124,7 +124,7 @@ export default function IncomeForm({ onSubmit, loading }) {
           fontSize: "1.4rem", fontWeight: 900, color: "#1a1a1a",
           margin: "0 0 0.45rem",
         }}>
-          Your Situation
+          Your Information
         </h2>
         {/* Red rule */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
