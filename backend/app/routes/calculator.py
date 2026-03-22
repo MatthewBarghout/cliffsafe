@@ -38,18 +38,20 @@ def _build_recommendation(
 
     if -500 <= gap <= 0:
         return (
-            f"You are right at the ${nearest['income_level']:,.0f} cliff — earning even slightly "
-            f"more could eliminate ${nearest['benefits_lost']:,.0f}/yr in benefits. "
-            f"Consider pre-tax deductions (Traditional IRA, HSA, 401k) to reduce your taxable income "
-            f"and preserve eligibility."
+            f"You are right at the ${nearest['income_level']:,.0f} (gross income limit) cliff — "
+            f"earning even slightly more could eliminate ${nearest['benefits_lost']:,.0f}/yr "
+            f"(annual value) in benefits. Consider pre-tax deductions (Traditional IRA, HSA, 401k) "
+            f"to reduce your taxable income and preserve eligibility."
         )
 
     if 0 < gap <= 5000:
         return (
-            f"Warning: you are ${gap:,.0f} away from a cliff at ${nearest['income_level']:,.0f}. "
-            f"A raise or extra hours could cost you ${nearest['benefits_lost']:,.0f}/yr in benefits. "
-            f"Your effective marginal rate is {emr * 100:.0f}% — meaning each extra dollar "
-            f"you earn only nets you {max(0, (1 - emr) * 100):.0f}¢ in real purchasing power. "
+            f"Warning: you are ${gap:,.0f} below a cliff at "
+            f"${nearest['income_level']:,.0f} (gross income limit). "
+            f"A raise or extra hours could cost you ${nearest['benefits_lost']:,.0f}/yr "
+            f"(annual value) in benefits. Your effective marginal rate is {emr * 100:.0f}% — "
+            f"meaning each extra dollar you earn (pre-tax) only nets you "
+            f"{max(0, (1 - emr) * 100):.0f}¢ (post-tax) in real purchasing power. "
             f"Use the Optimizer to find the safest income target."
         )
 
@@ -62,8 +64,8 @@ def _build_recommendation(
 
     biggest = max(cliff_points, key=lambda c: c["benefits_lost"])
     return (
-        f"Your biggest cliff is at ${biggest['income_level']:,.0f} — crossing it eliminates "
-        f"${biggest['benefits_lost']:,.0f}/yr in benefits. "
+        f"Your biggest cliff is at ${biggest['income_level']:,.0f} (gross income limit) — "
+        f"crossing it eliminates ${biggest['benefits_lost']:,.0f}/yr (annual value) in benefits. "
         f"Your current effective marginal rate is {emr * 100:.0f}%."
     )
 
@@ -98,8 +100,8 @@ async def calculate(req: CalculationRequest):
         ),
         BenefitDetail(
             name="Medicaid",
-            monthly_value=round(med_thresh["estimated_annual_value"] / 12, 2),
-            annual_value=med_thresh["estimated_annual_value"],
+            monthly_value=round(benefits["medicaid"] / 12, 2),
+            annual_value=benefits["medicaid"],
             eligibility_threshold=med_thresh["annual_income_limit"],
             currently_eligible=benefits["medicaid"] > 0,
         ),

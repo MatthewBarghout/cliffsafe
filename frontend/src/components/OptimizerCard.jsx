@@ -424,14 +424,21 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
           >
             {/* Metrics */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-              <GainMetric label="Current net"    value={fmt(result.current_net)} />
-              <GainMetric label="Optimized net"  value={fmt(result.optimized_net)} accent={T.green} sub="gross + retained benefits" />
-              <GainMetric label="Net gain"       value={result.net_gain >= 0 ? `+${fmt(result.net_gain)}` : fmt(result.net_gain)} accent={T.green} sub="per year" />
+              <GainMetric label="Current net"    value={fmt(result.current_net)} sub="post-tax" />
+              <GainMetric label="Optimized net"  value={fmt(result.optimized_net)} accent={T.green} sub="post-tax + benefits retained" />
+              <GainMetric
+                label="Net gain"
+                value={result.net_gain >= 0 ? `+${fmt(result.net_gain)}` : fmt(result.net_gain)}
+                accent={T.green}
+                sub={Math.abs(result.net_gain - result.benefits_retained) > 1
+                  ? "post-tax, per year · includes tax savings"
+                  : "post-tax, per year"}
+              />
               <GainMetric
                 label={result.net_gain > 0 ? "Benefits retained" : "Benefits at risk"}
                 value={fmt(result.benefits_retained)}
                 accent={T.blue}
-                sub={result.net_gain === 0 ? "if cliff crossed" : undefined}
+                sub={result.net_gain === 0 ? "if cliff crossed (annual value)" : "annual value"}
               />
             </div>
 

@@ -264,7 +264,7 @@ function CliffCard({ cp, index }) {
           <span style={{ color: "var(--color-text-secondary)" }}>
             Benefits lost:{" "}
             <strong style={{ color: palette.text, fontWeight: 500 }}>
-              {fmt(cp.benefits_lost)}
+              {fmt(cp.benefits_lost)} (annual value)
             </strong>
           </span>
           <span
@@ -274,7 +274,7 @@ function CliffCard({ cp, index }) {
             }}
           >
             {isNegative ? "−" : "+"}
-            {fmt(Math.abs(cp.net_change))} net
+            {fmt(Math.abs(cp.net_change))} net (post-tax)
           </span>
         </div>
       </div>
@@ -314,7 +314,7 @@ function BenefitsTable({ benefits }) {
               letterSpacing: "0.05em",
             }}
           >
-            {["Program", "Monthly", "Annual", "Income limit", "Status"].map(
+            {["Program", "Monthly (post-tax)", "Annual (post-tax)", "Income limit (gross)", "Status"].map(
               (h) => (
                 <th
                   key={h}
@@ -352,10 +352,10 @@ function BenefitsTable({ benefits }) {
                 {b.name}
               </td>
               <td style={{ padding: "10px 0", color: "var(--color-text-secondary)" }}>
-                {fmt(b.monthly_value)}
+                {b.currently_eligible ? fmt(b.monthly_value) : fmt(0)}
               </td>
               <td style={{ padding: "10px 0", color: "var(--color-text-secondary)" }}>
-                {fmt(b.annual_value)}
+                {b.currently_eligible ? fmt(b.annual_value) : fmt(0)}
               </td>
               <td style={{ padding: "10px 0", color: "var(--color-text-secondary)" }}>
                 {fmt(b.eligibility_threshold)}
@@ -445,7 +445,7 @@ export default function ResultsPanel({ data, monteCarlo }) {
   const d = data ?? MOCK_DATA;
 
   const cliffCount = d.cliff_points?.length ?? 0;
-  const totalCompensation = d.gross_income + d.total_benefits;
+  const totalCompensation = d.total_compensation ?? (d.net_income + d.total_benefits);
   const headlineColor =
     d.effective_marginal_rate >= 0.8
       ? "#A32D2D"
@@ -509,21 +509,24 @@ export default function ResultsPanel({ data, monteCarlo }) {
           <MetricCard
             label="Gross income"
             value={fmt(d.gross_income)}
+            sub="pre-tax"
           />
           <MetricCard
             label="Total compensation"
             value={fmt(totalCompensation)}
-            sub="gross + benefits"
+            sub="post-tax + benefits"
             accent="#1D9E75"
           />
           <MetricCard
             label="Benefits at risk"
             value={fmt(d.total_benefits)}
+            sub="annual value"
             accent="#E24B4A"
           />
           <MetricCard
             label="Net income"
             value={fmt(d.net_income)}
+            sub="post-tax"
             accent={headlineColor}
           />
           <MetricCard
@@ -535,7 +538,7 @@ export default function ResultsPanel({ data, monteCarlo }) {
             }
             sub={
               monteCarlo
-                ? "from income volatility · see full analysis below"
+                ? "Monte Carlo · 1,000 sims · see below"
                 : "Running 1,000 simulations…"
             }
             accent={

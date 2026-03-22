@@ -37,7 +37,7 @@ class MonteCarloRequest(BaseModel):
     state: str
     employment_type: EmploymentType
     has_children: bool = False
-    n_simulations: int = 1000
+    n_simulations: int = 10000
 
 
 class AdvisorRequest(BaseModel):

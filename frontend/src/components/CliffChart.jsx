@@ -3,7 +3,6 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   ComposedChart,
   Area,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -59,6 +58,19 @@ function findRecovery(data, cliff) {
     if (pt.gross > cliff.atGross && pt.netIncome >= cliff.netBefore) return pt.gross;
   }
   return data[data.length - 1]?.gross ?? cliff.atGross + 15000;
+}
+
+function findDangerStart(data, cliff) {
+  const cliffIdx = data.findIndex((d) => d.gross >= cliff.atGross);
+  if (cliffIdx <= 1) return cliff.atGross;
+  // Walk backward to find the last peak before the decline
+  for (let i = cliffIdx - 1; i > 0; i--) {
+    if (data[i].netIncome >= data[i - 1].netIncome) {
+      // data[i] is the peak — danger zone starts here, covering the full drop
+      return data[i].gross;
+    }
+  }
+  return cliff.atGross;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -175,20 +187,12 @@ function LegendDot({ color, label }) {
     </span>
   );
 }
-function LegendDash({ color, label }) {
-  return (
-    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ width: 28, height: 0, borderTop: `2px dashed ${color}`, display: "inline-block" }} />
-      {label}
-    </span>
-  );
-}
-function LegendBox({ color, label }) {
+function LegendBox({ color, label, border }) {
   return (
     <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <span style={{
         width: 14, height: 14, background: color, display: "inline-block",
-        borderRadius: 3, border: "1px solid rgba(226,75,74,0.3)",
+        borderRadius: 3, border: border ?? "1px solid rgba(226,75,74,0.3)",
       }} />
       {label}
     </span>
@@ -220,7 +224,11 @@ export default function CliffChart({ data, householdSize = 1, userIncome }) {
 
   const cliffs     = useMemo(() => detectCliffs(chartData), [chartData]);
   const dangerZones = useMemo(
-    () => cliffs.map((c) => ({ ...c, recoveryGross: findRecovery(chartData, c) })),
+    () => cliffs.map((c) => ({
+      ...c,
+      dangerStart: findDangerStart(chartData, c),
+      recoveryGross: findRecovery(chartData, c),
+    })),
     [cliffs, chartData]
   );
   const biggestCliff = cliffs.reduce((max, c) => (c.drop > (max?.drop ?? 0) ? c : max), null);
@@ -229,6 +237,17 @@ export default function CliffChart({ data, householdSize = 1, userIncome }) {
   const yMax = Math.max(...chartData.map((d) => d.netIncome)) + 4000;
   const xMin = chartData[0]?.gross ?? 12000;
   const xMax = chartData[chartData.length - 1]?.gross ?? 75000;
+
+  const safeZones = useMemo(() => {
+    const zones = [];
+    let start = xMin;
+    for (const dz of dangerZones) {
+      if (start < dz.dangerStart) zones.push({ x1: start, x2: dz.dangerStart });
+      start = dz.recoveryGross;
+    }
+    if (start < xMax) zones.push({ x1: start, x2: xMax });
+    return zones;
+  }, [dangerZones, xMin, xMax]);
   const yOffsets = useMemo(() => computeYOffsets(cliffs, xMax - xMin), [cliffs, xMin, xMax]);
 
   // ── Scroll-triggered phase sequencer ──────────────────────
@@ -380,9 +399,9 @@ export default function CliffChart({ data, householdSize = 1, userIncome }) {
             transition={{ duration: 0.4, delay: 0.35 }}
             style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 16, fontSize: 12, color: "#666", fontFamily: "'DM Sans', system-ui, sans-serif" }}
           >
-            <LegendDot   color="#1D9E75" label="Total compensation (take-home + benefits)" />
-            <LegendDash  color="#378ADD" label="Gross income (baseline)" />
-            <LegendBox   color="rgba(226,75,74,0.15)" label="Danger zone" />
+            <LegendDot color="#1D9E75" label="Total compensation (income + benefits)" />
+            <LegendBox color="rgba(29,158,117,0.15)" label="Safe zone" border="1px solid rgba(29,158,117,0.35)" />
+            <LegendBox color="rgba(226,75,74,0.15)" label="Danger zone" />
           </motion.div>
         </div>
 
@@ -420,12 +439,23 @@ export default function CliffChart({ data, householdSize = 1, userIncome }) {
 
               <Tooltip content={<CustomTooltip cliffs={cliffs} />} />
 
+              {/* Safe zones — fade in during phase 2 */}
+              {cliffs.length > 0 && safeZones.map((sz, i) => (
+                <ReferenceArea
+                  key={`safe-${i}`}
+                  x1={sz.x1} x2={sz.x2}
+                  fill={showDangerZones ? "rgba(29,158,117,0.12)" : "transparent"}
+                  stroke="transparent"
+                  className={showDangerZones ? "danger-zone-entering" : ""}
+                />
+              ))}
+
               {/* Danger zones — fade in during phase 2 */}
               {dangerZones.map((dz, i) => (
                 <ReferenceArea
-                  key={i}
-                  x1={dz.atGross} x2={dz.recoveryGross}
-                  fill={showDangerZones ? "rgba(226,75,74,0.08)" : "transparent"}
+                  key={`danger-${i}`}
+                  x1={dz.dangerStart} x2={dz.recoveryGross}
+                  fill={showDangerZones ? "rgba(226,75,74,0.14)" : "transparent"}
                   stroke={showDangerZones ? "rgba(226,75,74,0.2)" : "transparent"}
                   strokeWidth={0.5}
                   className={showDangerZones ? "danger-zone-entering" : ""}
@@ -442,17 +472,6 @@ export default function CliffChart({ data, householdSize = 1, userIncome }) {
                 animationDuration={1200}
                 animationEasing="ease-out"
                 animationBegin={0}
-              />
-
-              {/* Gross income diagonal */}
-              <Line
-                dataKey="gross"
-                stroke="#378ADD" strokeWidth={1.5} strokeDasharray="6 4"
-                dot={false} type="linear"
-                isAnimationActive={true}
-                animationDuration={1000}
-                animationEasing="ease-out"
-                animationBegin={200}
               />
 
               {/* Cliff reference lines + badges */}

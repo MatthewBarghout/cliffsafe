@@ -110,7 +110,7 @@ function LoadingState() {
         animation: "spin-ring 0.8s linear infinite", flexShrink: 0,
       }} />
       <span style={{ fontSize: "0.825rem", color: T.textTertiary, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-        Running 1,000 income simulations…
+        Running 10,000 income simulations…
       </span>
     </div>
   );
@@ -182,7 +182,7 @@ export default function MonteCarloSection({ data }) {
             Income volatility risk
           </h2>
           <p style={{ fontSize: 13, color: T.textTertiary, margin: "4px 0 0" }}>
-            {n.toLocaleString()} lognormal simulations ·{" "}
+            {n.toLocaleString()} lognormal simulations of gross annual income ·{" "}
             {VOLATILITY_LABELS[empType] ?? empType} volatility profile
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function MonteCarloSection({ data }) {
       }}>
         <p style={{ fontSize: 13, color: T.textSecondary, margin: 0, lineHeight: 1.65 }}>
           <strong style={{ color: riskColor, fontWeight: 700 }}>
-            {Math.round(prob * 100)}% of {n.toLocaleString()} simulated income paths
+            {Math.round(prob * 100)}% of {n.toLocaleString()} simulated gross income paths
           </strong>{" "}
           crossed a benefits cliff this year due to income volatility
           {cliffs?.length > 0 && (
@@ -246,8 +246,8 @@ export default function MonteCarloSection({ data }) {
           )}
         </p>
 
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={curveData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={curveData} margin={{ top: 8, right: 8, left: 0, bottom: 20 }}>
             <defs>
               <linearGradient id="mcGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stopColor={T.green} stopOpacity={0.35} />
@@ -280,6 +280,7 @@ export default function MonteCarloSection({ data }) {
               ticks={tickValues} tickFormatter={fmtK}
               tick={{ fontSize: 10, fill: T.textTertiary }}
               tickLine={false} axisLine={false}
+              label={{ value: "Gross Annual Income (pre-tax)", position: "insideBottom", offset: -2, fontSize: 10, fill: T.textTertiary }}
             />
             <YAxis hide domain={[0, "auto"]} />
           </AreaChart>
@@ -306,9 +307,9 @@ export default function MonteCarloSection({ data }) {
 
       {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-        <StatBox label="5th pct income"   value={fmt(ciLow)}  sub="worst-case 5%"  color={T.redAlt} />
-        <StatBox label="Expected income"  value={fmt(mean)}   sub="simulation mean" />
-        <StatBox label="95th pct income"  value={fmt(ciHigh)} sub="best-case 5%"   color={T.green} />
+        <StatBox label="5th pct income (gross)"   value={fmt(ciLow)}  sub="worst-case 5%"  color={T.redAlt} />
+        <StatBox label="Expected income (gross)"  value={fmt(mean)}   sub="simulation mean" />
+        <StatBox label="95th pct income (gross)"  value={fmt(ciHigh)} sub="best-case 5%"   color={T.green} />
       </div>
 
       {/* Benefits loss warning */}

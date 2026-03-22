@@ -223,18 +223,23 @@ def _cliff_description(prev: Dict, curr: Dict) -> str:
     for prog in ("snap", "medicaid", "housing", "childcare"):
         diff = prev[prog] - curr[prog]
         if diff > 200:
-            losses.append(f"{prog.upper()} (−${diff:,.0f}/yr)")
+            losses.append(f"{prog.upper()} worth ${diff:,.0f}/yr (annual value)")
 
     comp_drop = prev["total_compensation"] - curr["total_compensation"]
+    income_gain = curr["gross_income"] - prev["gross_income"]
     income_level = curr["gross_income"]
 
     if losses:
         label = ", ".join(losses)
         return (
-            f"Cliff at ${income_level:,.0f}: losing {label}. "
-            f"Net compensation drops ${comp_drop:,.0f} despite earning ${curr['gross_income'] - prev['gross_income']:,.0f} more."
+            f"Cliff at ${income_level:,.0f} (gross income limit): losing {label}. "
+            f"Net compensation drops ${comp_drop:,.0f} (post-tax) despite earning "
+            f"${income_gain:,.0f} more (pre-tax)."
         )
-    return f"Benefits cliff at ${income_level:,.0f}: net compensation drops ${comp_drop:,.0f}."
+    return (
+        f"Benefits cliff at ${income_level:,.0f} (gross income limit): "
+        f"net compensation drops ${comp_drop:,.0f} (post-tax)."
+    )
 
 
 def detect_cliff_points(
@@ -371,10 +376,10 @@ def run_monte_carlo(
     household_size: int,
     employment_type: str,
     has_children: bool = False,
-    n_sims: int = 1000,
+    n_sims: int = 10000,
 ) -> Dict:
     """
-    Simulate 1000 twelve-month income paths using lognormal monthly draws.
+    Simulate 10,000 twelve-month income paths using lognormal monthly draws.
 
     Cliff event defined as: simulated annual income crosses any cliff threshold
     from below (i.e., the person earns into a danger zone and loses benefits),

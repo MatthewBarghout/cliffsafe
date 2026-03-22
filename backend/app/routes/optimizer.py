@@ -33,11 +33,9 @@ def _max_pretax_reduction(gross: float, employment_type: str, has_children: bool
 
 
 def _account_label(employment_type: str) -> str:
-    if employment_type == "self_employed":
-        return "SEP-IRA"
-    elif employment_type in ("full_time", "part_time"):
+    if employment_type in ("full_time", "part_time"):
         return "Traditional IRA or 401(k)"
-    return "Traditional IRA"
+    return "SEP-IRA or Traditional IRA"
 
 
 def _benefit_at_threshold(program: str, threshold: float,
@@ -127,8 +125,9 @@ async def optimize(req: OptimizeRequest):
 
         steps.append(OptimizationStep(
             action=(
-                f"Contribute ${contribution_needed:,.0f}/year to {account} "
-                f"to get back below the ${target_threshold:,.0f} {target_program} cliff"
+                f"Contribute ${contribution_needed:,.0f}/year (pre-tax) to {account} "
+                f"to get back below the ${target_threshold:,.0f} (gross income limit) "
+                f"{target_program} cliff"
             ),
             income_adjustment=-contribution_needed,
             benefits_preserved=round(benefits_preserved, 2),
@@ -139,9 +138,10 @@ async def optimize(req: OptimizeRequest):
     elif scenario == "B" and contribution_needed > 0:
         steps.append(OptimizationStep(
             action=(
-                f"Contribute ${contribution_needed:,.0f}/year to {account} "
-                f"to stay $500 below the ${target_threshold:,.0f} {target_program} cliff "
-                f"and protect ${benefits_at_stake:,.0f} in annual benefits"
+                f"Contribute ${contribution_needed:,.0f}/year (pre-tax) to {account} "
+                f"to stay $500 below the ${target_threshold:,.0f} (gross income limit) "
+                f"{target_program} cliff and protect ${benefits_at_stake:,.0f} "
+                f"(annual value) in benefits"
             ),
             income_adjustment=-contribution_needed,
             benefits_preserved=round(benefits_at_stake, 2),
@@ -166,21 +166,22 @@ async def optimize(req: OptimizeRequest):
     if scenario == "A" and steps:
         strategy_name = "BENEFITS BRIDGE STRATEGY"
         summary = (
-            f"You have crossed the {target_program} cliff at ${target_threshold:,.0f}. "
-            f"Contributing ${contribution_needed:,.0f}/year to a {account} reduces your "
-            f"reportable income below the cliff threshold, restoring "
-            f"${benefits_retained:,.0f} in annual benefits and improving your total "
-            f"compensation by ${total_net_gain:+,.0f}/year."
+            f"You have crossed the {target_program} cliff at "
+            f"${target_threshold:,.0f} (gross income limit). "
+            f"Contributing ${contribution_needed:,.0f}/year (pre-tax) to a {account} "
+            f"reduces your reportable income below the cliff threshold, restoring "
+            f"${benefits_retained:,.0f} (annual value) in benefits and improving your "
+            f"total compensation by ${total_net_gain:+,.0f} (post-tax) per year."
         )
 
     elif scenario == "B" and steps:
         strategy_name = "CLIFF PROTECTION STRATEGY"
         summary = (
             f"Your income is ${target_threshold - gross:,.0f} below the "
-            f"{target_program} cliff at ${target_threshold:,.0f}. "
-            f"Contributing ${contribution_needed:,.0f}/year to a {account} keeps you "
-            f"$500 safely below the threshold and protects "
-            f"${benefits_at_stake:,.0f} in annual benefits."
+            f"{target_program} cliff at ${target_threshold:,.0f} (gross income limit). "
+            f"Contributing ${contribution_needed:,.0f}/year (pre-tax) to a {account} "
+            f"keeps you $500 safely below the threshold and protects "
+            f"${benefits_at_stake:,.0f} (annual value) in annual benefits."
         )
 
     else:
