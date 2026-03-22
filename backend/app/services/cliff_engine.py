@@ -15,12 +15,43 @@ CliffSafe core calculation engine — real math.
 import numpy as np
 from typing import List, Dict, Optional
 
+# ---------------------------------------------------------------------------
+# Tax rate tables
+# ---------------------------------------------------------------------------
+
+STATE_INCOME_TAX: Dict[str, float] = {
+    "AL": 0.050, "AK": 0.000, "AZ": 0.025, "AR": 0.039, "CA": 0.060,
+    "CO": 0.044, "CT": 0.050, "DE": 0.052, "FL": 0.000, "GA": 0.0519,
+    "HI": 0.072, "ID": 0.053, "IL": 0.0495, "IN": 0.030, "IA": 0.038,
+    "KS": 0.053, "KY": 0.040, "LA": 0.030, "ME": 0.058, "MD": 0.048,
+    "MA": 0.050, "MI": 0.0425, "MN": 0.065, "MS": 0.044, "MO": 0.047,
+    "MT": 0.059, "NE": 0.052, "NV": 0.000, "NH": 0.000, "NJ": 0.035,
+    "NM": 0.049, "NY": 0.055, "NC": 0.0425, "ND": 0.020, "OH": 0.028,
+    "OK": 0.048, "OR": 0.088, "PA": 0.0307, "RI": 0.038, "SC": 0.062,
+    "SD": 0.000, "TN": 0.000, "TX": 0.000, "UT": 0.045, "VT": 0.066,
+    "VA": 0.0575, "WA": 0.000, "WV": 0.0482, "WI": 0.053, "WY": 0.000,
+    "DC": 0.085,
+}
+
+# Employee share only (W-2). Self-employed pay both sides but deduct half,
+# yielding ~14.1% effective rate on net earnings.
+FICA_RATE: Dict[str, float] = {
+    "full_time":    0.0765,
+    "part_time":    0.0765,
+    "self_employed": 0.141,
+    "seasonal":     0.141,
+}
+
 from app.services.benefits_data import (
     get_fpl,
     get_snap_benefit,
     get_medicaid_benefit,
     get_housing_benefit,
     get_childcare_benefit,
+    get_snap_thresholds,
+    get_medicaid_thresholds,
+    get_housing_thresholds,
+    get_childcare_thresholds,
 )
 
 
@@ -30,11 +61,11 @@ from app.services.benefits_data import (
 
 def calculate_federal_taxes(gross: float, employment_type: str, household_size: int) -> float:
     """
-    Estimate annual federal income tax + payroll taxes.
+    Estimate annual federal income tax only (no payroll — FICA is computed
+    separately in compute_net_income).
 
     Uses 2025 tax brackets and standard deductions.
-    Self-employed: SE tax (15.3% on 92.35% of net earnings), half deductible.
-    Employees: 7.65% FICA.
+    Self-employed: half of SE tax is deductible from AGI.
     """
     if gross <= 0:
         return 0.0
@@ -48,15 +79,13 @@ def calculate_federal_taxes(gross: float, employment_type: str, household_size: 
         std_deduction = 15000.0   # Single
 
     if employment_type == "self_employed":
-        se_base = gross * 0.9235
-        se_tax = se_base * 0.153
+        # Self-employed deduct half of SE tax (15.3% × 92.35%) from AGI
+        se_tax = gross * 0.9235 * 0.153
         agi = gross - (se_tax / 2.0)
-        payroll_tax = se_tax
     else:
-        payroll_tax = min(gross, 168600.0) * 0.0765
         agi = gross
 
-    # 2025 federal income tax (single brackets as baseline)
+    # 2025 federal income tax brackets (single filer as baseline)
     taxable = max(0.0, agi - std_deduction)
     if taxable <= 11925:
         income_tax = taxable * 0.10
@@ -68,7 +97,7 @@ def calculate_federal_taxes(gross: float, employment_type: str, household_size: 
         income_tax = (11925 * 0.10 + (48475 - 11925) * 0.12
                       + (103350 - 48475) * 0.22 + (taxable - 103350) * 0.24)
 
-    return income_tax + payroll_tax
+    return income_tax
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +134,13 @@ def compute_net_income(
     household_size: int,
     employment_type: str,
 ) -> float:
-    """Take-home pay after taxes (does not include benefit values)."""
-    taxes = calculate_federal_taxes(gross_income, employment_type, household_size)
-    return max(0.0, gross_income - taxes)
+    """Take-home pay after federal income tax, state income tax, and FICA."""
+    if gross_income <= 0:
+        return 0.0
+    federal_tax = calculate_federal_taxes(gross_income, employment_type, household_size)
+    state_tax = gross_income * STATE_INCOME_TAX.get(state.upper(), 0.05)
+    fica_tax = gross_income * FICA_RATE.get(employment_type, 0.0765)
+    return max(0.0, gross_income - federal_tax - state_tax - fica_tax)
 
 
 def compute_total_compensation(
@@ -157,6 +190,28 @@ def build_income_curve(
             "total_compensation": round(net + b["total"], 2),
         })
     return points
+
+
+# ---------------------------------------------------------------------------
+# Program thresholds (exact FPL math, no $500-step approximation)
+# ---------------------------------------------------------------------------
+
+def get_program_thresholds(household_size: int, state: str) -> Dict[str, float]:
+    """
+    Return hard income thresholds for each benefit program.
+
+    Uses exact FPL arithmetic so the optimizer can target precise cliff points
+    rather than relying on the $500-step detect_cliff_points scan.
+
+    Housing uses a simplified AMI proxy ($35,000 × household_size) which
+    matches 50% of NC's $70k AMI for household=1 and scales reasonably.
+    """
+    fpl = 15650.0 + 5500.0 * (household_size - 1)
+    return {
+        "SNAP":     fpl * 1.30,
+        "Medicaid": fpl * 1.38,
+        "Housing":  35000.0 * household_size,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -224,16 +279,77 @@ def compute_effective_marginal_rate(
     has_children: bool = False,
 ) -> float:
     """
-    Fraction of a $1 raise that is effectively lost (taxes + benefit reduction).
-    Values > 1.0 mean net compensation actually falls.
+    Effective marginal rate = pure tax rate + cliff penalties for hard thresholds
+    already crossed but not yet past break-even.
+
+    Rules:
+    - BELOW a threshold: zero cliff penalty (not yet lost the benefit)
+    - AT/ABOVE threshold but below break-even: penalty = benefits_lost / gross_income
+    - AT/ABOVE threshold AND past break-even: zero penalty (fully recovered)
+
+    Break-even = threshold + benefits_lost / (1 - tax_rate)
+    i.e. the income at which after-tax earnings cover the lost benefit.
+
+    This ensures someone $999 below a cliff sees only their tax rate (~24-30%),
+    while someone just above sees a meaningfully elevated rate.
     """
-    if delta <= 0:
+    if gross_income <= 0:
         return 0.0
-    base = compute_total_compensation(gross_income, state, household_size, employment_type, has_children)
-    higher = compute_total_compensation(gross_income + delta, state, household_size, employment_type, has_children)
-    gain = higher - base
-    rate = 1.0 - (gain / delta)
-    return round(float(np.clip(rate, -5.0, 10.0)), 4)
+
+    state_upper = state.upper()
+
+    # ── Pure tax marginal rate ─────────────────────────────────────────────
+    state_rate = STATE_INCOME_TAX.get(state_upper, 0.05)
+    fica = FICA_RATE.get(employment_type, 0.0765)
+
+    # Federal marginal rate: slope of the income-tax curve at this income
+    fed_base = calculate_federal_taxes(gross_income, employment_type, household_size)
+    fed_higher = calculate_federal_taxes(gross_income + delta, employment_type, household_size)
+    federal_marginal = (fed_higher - fed_base) / delta
+
+    tax_rate = federal_marginal + state_rate + fica  # e.g. ~0.24 for salaried NC at $34k
+
+    # ── Cliff penalty helper ───────────────────────────────────────────────
+    def _cliff_penalty(threshold: float, benefits_lost: float) -> float:
+        """
+        Return cliff penalty contribution if gross is above threshold but
+        has not yet recovered (i.e. below break-even).
+        """
+        if gross_income < threshold or benefits_lost <= 0:
+            return 0.0
+        # Break-even: how much extra income is needed to earn back benefits_lost after tax
+        break_even = threshold + benefits_lost / max(1.0 - tax_rate, 0.01)
+        if gross_income >= break_even:
+            return 0.0  # user has fully recovered from the cliff
+        # Amortise the lost benefit over the user's full income
+        return benefits_lost / gross_income
+
+    # ── Per-program thresholds ─────────────────────────────────────────────
+    cliff_penalty = 0.0
+
+    # SNAP — 130% FPL hard gross cutoff (phase-out often brings it to ~$0 here anyway)
+    snap_t = get_snap_thresholds(state_upper, household_size)["gross_annual_limit"]
+    snap_lost = get_snap_benefit(snap_t - 1, household_size, state_upper)
+    cliff_penalty += _cliff_penalty(snap_t, snap_lost)
+
+    # Medicaid — 138% FPL (expansion states) or 100% FPL (non-expansion)
+    med_t = get_medicaid_thresholds(state_upper, household_size)["annual_income_limit"]
+    med_lost = get_medicaid_benefit(med_t - 1, household_size, state_upper)
+    cliff_penalty += _cliff_penalty(med_t, med_lost)
+
+    # Section 8 housing — 50% AMI hard cutoff
+    housing_t = get_housing_thresholds(state_upper, household_size)["annual_income_limit"]
+    housing_lost = get_housing_benefit(housing_t - 1, household_size, state_upper)
+    cliff_penalty += _cliff_penalty(housing_t, housing_lost)
+
+    # Childcare (CCAP) — 200% FPL, only if household has children
+    if has_children:
+        cc_t = get_childcare_thresholds(state_upper, household_size)["annual_income_limit"]
+        cc_lost = get_childcare_benefit(cc_t - 1, household_size, state_upper)
+        cliff_penalty += _cliff_penalty(cc_t, cc_lost)
+
+    rate = tax_rate + cliff_penalty
+    return round(float(np.clip(rate, 0.0, 10.0)), 4)
 
 
 # ---------------------------------------------------------------------------

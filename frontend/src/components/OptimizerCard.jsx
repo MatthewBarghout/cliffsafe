@@ -243,7 +243,7 @@ function StepCard({ step, index }) {
             <span>
               Net gain:{" "}
               <strong style={{ fontWeight: 500, color: "#1D9E75" }}>
-                +{fmt(step.net_gain)}
+                {step.net_gain >= 0 ? `+${fmt(step.net_gain)}` : fmt(step.net_gain)}
               </strong>
             </span>
             <span
@@ -391,13 +391,6 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
     setError(null);
     try {
       const { data } = await optimizeIncome(formData);
-      // Compute benefits_retained from steps if not returned by API
-      if (data.benefits_retained == null) {
-        data.benefits_retained = (data.steps ?? []).reduce(
-          (sum, s) => sum + (s.benefits_preserved ?? 0),
-          0
-        );
-      }
       setResult(data);
     } catch {
       setError("Could not reach the optimizer. Is the backend running?");
@@ -519,69 +512,98 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
               />
               <GainMetric
                 label="Net gain"
-                value={`+${fmt(result.net_gain)}`}
+                value={result.net_gain >= 0 ? `+${fmt(result.net_gain)}` : fmt(result.net_gain)}
                 accent="#1D9E75"
                 sub="per year"
               />
               <GainMetric
-                label="Benefits retained"
+                label={result.net_gain > 0 ? "Benefits retained" : "Benefits at risk"}
                 value={fmt(result.benefits_retained)}
                 accent="#378ADD"
+                sub={result.net_gain === 0 ? "if cliff crossed" : undefined}
               />
             </div>
 
-            {/* Strategy summary */}
-            <motion.div
-              variants={STAGGER.item}
-              style={{
-                borderLeft: "3px solid #1D9E75",
-                background: "rgba(29,158,117,0.06)",
-                borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
-                padding: "12px 16px",
-              }}
-            >
-              <p
+            {/* Strategy summary — only shown when there is an actionable strategy */}
+            {result.steps.length > 0 && result.strategy_name && (
+              <motion.div
+                variants={STAGGER.item}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: "#0F6E56",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  marginBottom: 5,
+                  borderLeft: "3px solid #1D9E75",
+                  background: "rgba(29,158,117,0.06)",
+                  borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                  padding: "12px 16px",
                 }}
               >
-                Strategy — {result.strategy_name}
-              </p>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "var(--color-text-secondary)",
-                  margin: 0,
-                  lineHeight: 1.65,
-                }}
-              >
-                {result.summary}
-              </p>
-            </motion.div>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: "#0F6E56",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    marginBottom: 5,
+                  }}
+                >
+                  Strategy — {result.strategy_name}
+                </p>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                    margin: 0,
+                    lineHeight: 1.65,
+                  }}
+                >
+                  {result.summary}
+                </p>
+              </motion.div>
+            )}
 
-            {/* Step cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <p
+            {/* Break-even message — shown when no actionable steps exist */}
+            {result.steps.length === 0 && (
+              <motion.div
+                variants={STAGGER.item}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  color: "var(--color-text-tertiary)",
-                  marginBottom: 2,
+                  borderLeft: "3px solid var(--color-border-secondary)",
+                  background: "var(--color-background-secondary)",
+                  borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
+                  padding: "12px 16px",
                 }}
               >
-                Action steps — click to expand
-              </p>
-              {result.steps.map((step, i) => (
-                <StepCard key={i} step={step} index={i} />
-              ))}
-            </div>
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                    margin: 0,
+                    lineHeight: 1.65,
+                  }}
+                >
+                  {result.summary}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Step cards — only shown when steps exist with real contribution amounts */}
+            {result.steps.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "var(--color-text-tertiary)",
+                    marginBottom: 2,
+                  }}
+                >
+                  Action steps — click to expand
+                </p>
+                {result.steps.map((step, i) => (
+                  <StepCard key={i} step={step} index={i} />
+                ))}
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div

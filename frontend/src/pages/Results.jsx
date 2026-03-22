@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ResultsPanel from "../components/ResultsPanel";
 import CliffChart from "../components/CliffChart";
 import OptimizerCard from "../components/OptimizerCard";
+import MonteCarloSection from "../components/MonteCarloSection";
 import AdvisorChat from "../components/AdvisorChat";
 import { ResultsSkeleton } from "../components/Loading";
 import { optimizeIncome, runMonteCarlo } from "../services/api";
@@ -161,6 +162,7 @@ export default function Results() {
                 userIncome={state.formData?.gross_income}
               />
               <ResultsPanel data={state.results} monteCarlo={monteCarlo} />
+              <MonteCarloSection data={monteCarlo} />
               <OptimizerCard formData={state.formData} optimizeIncome={optimizeIncome} />
               <AdvisorChat results={state.results} formData={state.formData} />
             </motion.div>

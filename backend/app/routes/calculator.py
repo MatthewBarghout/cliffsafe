@@ -53,6 +53,13 @@ def _build_recommendation(
             f"Use the Optimizer to find the safest income target."
         )
 
+    # User is above all detected cliff thresholds — past break-even
+    if all(c["income_level"] < gross for c in cliff_points):
+        return (
+            "You have passed all benefit cliffs. Your total compensation is now growing "
+            "with income. Focus on maximizing pre-tax contributions to reduce your tax burden."
+        )
+
     biggest = max(cliff_points, key=lambda c: c["benefits_lost"])
     return (
         f"Your biggest cliff is at ${biggest['income_level']:,.0f} — crossing it eliminates "

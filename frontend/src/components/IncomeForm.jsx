@@ -13,8 +13,7 @@ const US_STATES = [
 const EMPLOYMENT_TYPES = [
   { value: "full_time",     label: "Full-time Employee" },
   { value: "part_time",     label: "Part-time Employee" },
-  { value: "gig",           label: "Gig Worker" },
-  { value: "self_employed", label: "Self-Employed" },
+  { value: "self_employed", label: "Gig / Self-Employed" },
   { value: "seasonal",      label: "Seasonal Worker" },
 ];
 

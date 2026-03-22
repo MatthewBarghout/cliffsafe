@@ -535,8 +535,8 @@ export default function ResultsPanel({ data, monteCarlo }) {
             }
             sub={
               monteCarlo
-                ? `${Math.round(monteCarlo.cliff_probability * 100)}% chance income volatility pushes you across a cliff · 1,000 simulations`
-                : "Running 1,000 income simulations…"
+                ? "from income volatility · see full analysis below"
+                : "Running 1,000 simulations…"
             }
             accent={
               monteCarlo

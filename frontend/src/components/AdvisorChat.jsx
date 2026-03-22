@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 
+function formatMessage(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/\n/g, "<br/>");
+}
+
 const API_BASE = "http://localhost:8000/api";
 
 export default function AdvisorChat({ results, formData }) {
@@ -175,11 +182,11 @@ export default function AdvisorChat({ results, formData }) {
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`text-sm rounded-2xl px-4 py-3 max-w-[85%] whitespace-pre-wrap ${
+            className={`text-sm rounded-2xl px-4 py-3 max-w-[85%] ${
               msg.role === "user"
-                ? "bg-white border border-gray-200 text-gray-700 self-end rounded-tr-sm"
+                ? "bg-white border border-gray-200 text-gray-700 self-end rounded-tr-sm whitespace-pre-wrap"
                 : msg.error
-                ? "bg-red-50 border border-red-200 text-red-700 self-start rounded-tl-sm"
+                ? "bg-red-50 border border-red-200 text-red-700 self-start rounded-tl-sm whitespace-pre-wrap"
                 : "bg-cliff-600 text-white self-start rounded-tl-sm"
             }`}
           >
@@ -189,6 +196,8 @@ export default function AdvisorChat({ results, formData }) {
                 <span className="w-2 h-2 rounded-full bg-white opacity-60 animate-bounce [animation-delay:150ms]" />
                 <span className="w-2 h-2 rounded-full bg-white opacity-60 animate-bounce [animation-delay:300ms]" />
               </span>
+            ) : msg.role === "advisor" && !msg.error ? (
+              <span dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} />
             ) : (
               msg.text
             )}

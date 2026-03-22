@@ -121,6 +121,7 @@ class OptimizeResponse(BaseModel):
     current_net: float
     optimized_net: float
     net_gain: float
+    benefits_retained: float
     strategy_name: str
     steps: List[OptimizationStep]
     summary: str
