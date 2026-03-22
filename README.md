@@ -190,7 +190,7 @@ data: [DONE]
 - [x] `POST /api/monte-carlo` route
 - [x] `POST /api/optimize` — replaced hardcoded mock with real optimizer wired to `cliff_engine.py`: scans income curve to find the optimal reportable income (max total compensation), generates sized IRA/401(k)/SEP-IRA/FSA steps with real `benefits_preserved` and `net_gain` computed from actual benefit math, handles self-employed (SEP-IRA) and `has_children` (Dependent Care FSA) scenarios
 
-### Frontend
+### Frontend ✅ Complete
 - [x] `CliffChart.jsx` — Recharts line chart showing income vs net compensation curve with cliff drop
 - [x] `AdvisorChat.jsx` — SSE streaming UI for Gemini advisor response
 - [x] `IncomeForm.jsx` — form polish, state dropdown, employment type selector
@@ -200,4 +200,4 @@ data: [DONE]
 - [x] Loading states / skeleton UI while waiting on API
 - [x] Error state UI if API call fails
 - [x] Animated cliff drop on chart (Framer Motion)
-- [ ] Color coding — green (safe zone) / red (cliff zone) on chart
+- [x] Color coding — green (safe zone) / red (cliff zone) on chart
