@@ -4,32 +4,6 @@ import { motion } from "framer-motion";
 const STEPS = [
   {
     number: "01",
-    title: "Detect Your Cliff",
-    summary: "See exactly where a raise triggers a net loss.",
-    body: `Most people assume that earning more always means taking home more. The benefits cliff is the hidden exception. When your income crosses a program threshold for SNAP, Medicaid, childcare subsidies, or housing assistance, you can lose hundreds or thousands of dollars in annual benefits almost overnight.
-
-CliffSafe maps your entire income range against every benefit program you're currently enrolled in, identifying the precise dollar amounts where a raise could leave you worse off. We call these "cliff points." Some are steep: a single $500 raise crossing a Medicaid threshold can result in a $7,800 annual loss in coverage value. Others are gradual phase-outs that still erode your real compensation faster than your paycheck grows.
-
-The cliff map shows you the full picture: your gross income on one axis, your total compensation (take-home pay plus benefits) on the other. The moment the curve drops is your cliff.`,
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
-        <path d="M4 22 C8 18 11 14 14 10 C16 7 17.5 5.5 19 5" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M19 5 L19 17" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M19 17 C21 17 23 16.5 24 16" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <circle cx="19" cy="5" r="2" fill="#c0392b"/>
-        <line x1="4" y1="22" x2="24" y2="22" stroke="#ddd6cc" strokeWidth="1" strokeDasharray="3 3"/>
-      </svg>
-    ),
-    accent: "#c0392b",
-    accentBg: "rgba(192,57,43,0.06)",
-    details: [
-      { label: "Programs tracked", value: "SNAP, Medicaid, CHIP, childcare subsidies, housing assistance" },
-      { label: "Cliff detection", value: "Flags every income level where net compensation drops" },
-      { label: "Data source", value: "Federal Poverty Level thresholds updated annually by state" },
-    ],
-  },
-  {
-    number: "02",
     title: "Run the Numbers",
     summary: "A full benefits breakdown in seconds.",
     body: `Understanding your cliff requires knowing exactly which benefits you're receiving, what they're worth in dollar terms, and at what income level each one cuts off. CliffSafe does this calculation automatically based on your state, household size, and employment type.
@@ -53,6 +27,32 @@ The result is a benefits breakdown table showing each program's monthly and annu
       { label: "Calculation time", value: "Under 2 seconds for a full household analysis" },
       { label: "State coverage", value: "All 50 states with state-specific Medicaid thresholds" },
       { label: "Household sizes", value: "1–6 people, with FPL adjustments per person" },
+    ],
+  },
+  {
+    number: "02",
+    title: "Detect Your Cliff",
+    summary: "See exactly where a raise triggers a net loss.",
+    body: `Most people assume that earning more always means taking home more. The benefits cliff is the hidden exception. When your income crosses a program threshold for SNAP, Medicaid, childcare subsidies, or housing assistance, you can lose hundreds or thousands of dollars in annual benefits almost overnight.
+
+CliffSafe maps your entire income range against every benefit program you're currently enrolled in, identifying the precise dollar amounts where a raise could leave you worse off. We call these "cliff points." Some are steep: a single $500 raise crossing a Medicaid threshold can result in a $7,800 annual loss in coverage value. Others are gradual phase-outs that still erode your real compensation faster than your paycheck grows.
+
+The cliff map shows you the full picture: your gross income on one axis, your total compensation (take-home pay plus benefits) on the other. The moment the curve drops is your cliff.`,
+    icon: (
+      <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
+        <path d="M4 22 C8 18 11 14 14 10 C16 7 17.5 5.5 19 5" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 5 L19 17" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 17 C21 17 23 16.5 24 16" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="19" cy="5" r="2" fill="#c0392b"/>
+        <line x1="4" y1="22" x2="24" y2="22" stroke="#ddd6cc" strokeWidth="1" strokeDasharray="3 3"/>
+      </svg>
+    ),
+    accent: "#c0392b",
+    accentBg: "rgba(192,57,43,0.06)",
+    details: [
+      { label: "Programs tracked", value: "SNAP, Medicaid, housing assistance" },
+      { label: "Cliff detection", value: "Flags every income level where net compensation drops" },
+      { label: "Data source", value: "Federal Poverty Level thresholds updated annually by state" },
     ],
   },
   {

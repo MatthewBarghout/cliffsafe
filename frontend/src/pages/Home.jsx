@@ -6,19 +6,6 @@ const FEATURES = [
   {
     icon: (
       <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <path d="M4 22 C8 18 11 14 14 10 C16 7 17.5 5.5 19 5" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M19 5 L19 17" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M19 17 C21 17 23 16.5 24 16" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
-        <circle cx="19" cy="5" r="2" fill="#c0392b"/>
-        <line x1="4" y1="22" x2="24" y2="22" stroke="#ddd6cc" strokeWidth="1" strokeDasharray="3 3"/>
-      </svg>
-    ),
-    title: "Detect Your Cliff",
-    desc: "See exactly where a raise could cost you more in lost benefits than you'd gain in pay.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
         <rect x="4" y="4" width="20" height="20" rx="3" stroke="#1a1a1a" strokeWidth="1.6" fill="none"/>
         <line x1="9" y1="4" x2="9" y2="24" stroke="#ddd6cc" strokeWidth="1"/>
         <line x1="4" y1="10" x2="24" y2="10" stroke="#ddd6cc" strokeWidth="1"/>
@@ -29,6 +16,19 @@ const FEATURES = [
     ),
     title: "Run the Numbers",
     desc: "Enter your income, state, and household size to get a full benefits breakdown in seconds.",
+  },
+  {
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M4 22 C8 18 11 14 14 10 C16 7 17.5 5.5 19 5" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 5 L19 17" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 17 C21 17 23 16.5 24 16" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="19" cy="5" r="2" fill="#c0392b"/>
+        <line x1="4" y1="22" x2="24" y2="22" stroke="#ddd6cc" strokeWidth="1" strokeDasharray="3 3"/>
+      </svg>
+    ),
+    title: "Detect Your Cliff",
+    desc: "See exactly where a raise could cost you more in lost benefits than you'd gain in pay.",
   },
   {
     icon: (

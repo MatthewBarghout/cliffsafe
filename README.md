@@ -72,34 +72,41 @@ Get a free API key at https://aistudio.google.com/apikey
 cliffsafe/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                 # FastAPI entry point, CORS
-│   │   ├── config.py               # Settings / .env loader
-│   │   ├── schemas.py              # Pydantic request/response models
+│   │   ├── main.py                     # FastAPI entry point, CORS
+│   │   ├── config.py                   # Settings / .env loader
+│   │   ├── schemas.py                  # Pydantic request/response models
 │   │   ├── routes/
-│   │   │   ├── calculator.py       # POST /api/calculate
-│   │   │   ├── benefits.py         # GET  /api/benefits/{state}/{household_size}
-│   │   │   ├── optimizer.py        # POST /api/optimize
-│   │   │   ├── monte_carlo.py      # POST /api/monte-carlo
-│   │   │   └── advisor.py          # POST /api/advisor (Gemini streaming SSE)
+│   │   │   ├── calculator.py           # POST /api/calculate
+│   │   │   ├── benefits.py             # GET  /api/benefits/{state}/{household_size}
+│   │   │   ├── optimizer.py            # POST /api/optimize
+│   │   │   ├── monte_carlo.py          # POST /api/monte-carlo
+│   │   │   └── advisor.py              # POST /api/advisor (Gemini streaming SSE)
 │   │   └── services/
-│   │       ├── cliff_engine.py     # Core cliff math + Monte Carlo (NumPy)
-│   │       └── benefits_data.py    # 2025 FPL thresholds by state/household
+│   │       ├── cliff_engine.py         # Core cliff math + Monte Carlo (NumPy)
+│   │       └── benefits_data.py        # 2025 FPL thresholds by state/household
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/
+│   ├── public/
+│   │   └── index.html
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── IncomeForm.jsx      # Input form
-│   │   │   ├── CliffChart.jsx      # Hero cliff curve visualization
-│   │   │   ├── ResultsPanel.jsx    # Cliff analysis results
-│   │   │   ├── OptimizerCard.jsx   # Income optimization strategies
-│   │   │   └── AdvisorChat.jsx     # Gemini advisor streaming UI
+│   │   │   ├── IncomeForm.jsx          # Input form
+│   │   │   ├── CliffChart.jsx          # Hero cliff curve visualization
+│   │   │   ├── ResultsPanel.jsx        # Cliff analysis results
+│   │   │   ├── OptimizerCard.jsx       # Income optimization strategies
+│   │   │   ├── MonteCarloSection.jsx   # Income volatility risk + distribution chart
+│   │   │   ├── Loading.jsx             # LoadingScreen, ResultsSkeleton, ButtonSpinner
+│   │   │   └── AdvisorChat.jsx         # Gemini advisor streaming UI
 │   │   ├── pages/
 │   │   │   ├── Home.jsx
+│   │   │   ├── HowItWorks.jsx
 │   │   │   ├── Calculator.jsx
 │   │   │   └── Results.jsx
-│   │   ├── services/api.js         # Axios instance
+│   │   ├── services/
+│   │   │   └── api.js                  # Axios instance + all API calls
 │   │   ├── App.jsx
+│   │   ├── index.css
 │   │   └── index.js
 │   └── package.json
 ├── start.sh
