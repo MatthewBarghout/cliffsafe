@@ -60,7 +60,7 @@ const FEATURES = [
 const STATS = [
   { value: "30M+", label: "households affected" },
   { value: "$10K+", label: "lost per year per family" },
-  { value: "4", label: "benefit programs tracked" },
+  { value: "3", label: "benefit programs tracked" },
 ];
 
 export default function Home() {
