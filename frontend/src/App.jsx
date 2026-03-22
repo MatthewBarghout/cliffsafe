@@ -1,4 +1,11 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import Home from "./pages/Home";
 import Calculator from "./pages/Calculator";
 import Results from "./pages/Results";
@@ -171,6 +178,7 @@ function Nav() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Nav />
       <Routes>
         <Route path="/"           element={<Home />} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ResultsPanel from "../components/ResultsPanel";
@@ -14,6 +14,7 @@ export default function Results() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [monteCarlo, setMonteCarlo] = useState(null);
+  const [showNudge, setShowNudge] = useState(false);
 
   useEffect(() => {
     if (state?.results) {
@@ -21,6 +22,24 @@ export default function Results() {
       return () => clearTimeout(t);
     }
   }, [state]);
+
+  // Lock scroll to top on mount — prevents browser scroll restoration
+  // and any layout-shift-triggered scrolling during skeleton → content transition
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Show nudge shortly after content reveals, hide once user scrolls
+  useEffect(() => {
+    if (!ready) return;
+    const showTimer = setTimeout(() => setShowNudge(true), 600);
+    const onScroll  = () => { if (window.scrollY > 80) setShowNudge(false); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(showTimer);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [ready]);
 
   // Run Monte Carlo in the background after results load
   useEffect(() => {
@@ -82,6 +101,10 @@ export default function Results() {
         @keyframes spin-ring {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
+        }
+        @keyframes nudge-bounce {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(6px); }
         }
 
         .grain-results {
@@ -169,6 +192,72 @@ export default function Results() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Scroll nudge ── */}
+      <AnimatePresence>
+        {showNudge && (
+          /* Wrapper is full-width fixed bar — centering via flexbox, not transform */
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 50,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              paddingBottom: "1.75rem",
+              pointerEvents: "none",
+            }}
+          >
+            <div
+              onClick={() => window.scrollBy({ top: window.innerHeight * 0.7, behavior: "smooth" })}
+              style={{
+                pointerEvents: "auto",
+                cursor: "pointer",
+                userSelect: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <span style={{
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                letterSpacing: "0.13em",
+                textTransform: "uppercase",
+                color: "#6b6258",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                textShadow: "0 1px 4px rgba(255,255,255,0.8)",
+              }}>
+                Scroll to explore
+              </span>
+              <div style={{
+                width: 42, height: 42,
+                borderRadius: "50%",
+                background: "white",
+                border: "1.5px solid #d4cdc5",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                animation: "nudge-bounce 1.6s ease-in-out infinite",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 5l5 5 5-5" stroke="#6b6258" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

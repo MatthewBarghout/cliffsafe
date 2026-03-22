@@ -195,35 +195,7 @@ export default function Calculator() {
               Enter your details to see exactly where earning more starts costing you — and how much.
             </p>
 
-            {/* Progress steps */}
-            <div style={{
-              display: "flex", justifyContent: "center",
-              alignItems: "center", gap: "0.4rem", marginTop: "1.4rem",
-            }}>
-              {["Your info", "Cliff analysis", "Strategy"].map((label, i) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.22rem" }}>
-                    <div style={{
-                      width: i === 0 ? 28 : 7,
-                      height: 5, borderRadius: 99,
-                      background: i === 0 ? "#c0392b" : "#ddd6cc",
-                    }} />
-                    <span style={{
-                      fontSize: "0.58rem", fontWeight: 600,
-                      color: i === 0 ? "#c0392b" : "#c5bdb4",
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                      letterSpacing: "0.04em", textTransform: "uppercase",
-                    }}>{label}</span>
-                  </div>
-                  {i < 2 && (
-                    <div style={{
-                      width: 18, height: 1, background: "#ddd6cc",
-                      borderRadius: 2, marginBottom: 13,
-                    }} />
-                  )}
-                </div>
-              ))}
-            </div>
+
           </motion.div>
 
           {/* Error banner */}

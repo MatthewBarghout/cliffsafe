@@ -24,8 +24,16 @@ export default function AdvisorChat({ results, formData }) {
     }
   }, [results, formData]);
 
+  // Only auto-scroll the chat thread if the user has already scrolled
+  // down to the advisor section — never hijack the page on initial load
+  const chatBoxRef = useRef(null);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!bottomRef.current || !chatBoxRef.current) return;
+    const rect = chatBoxRef.current.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    if (isVisible) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }, [messages]);
 
   async function runAdvisor(userQuestion) {
@@ -172,7 +180,7 @@ export default function AdvisorChat({ results, formData }) {
       </div>
 
       {/* Message thread */}
-      <div className="bg-gray-50 rounded-xl p-5 min-h-[200px] max-h-[420px] overflow-y-auto flex flex-col space-y-3">
+      <div className="bg-gray-50 rounded-xl p-5 min-h-[200px] max-h-[420px] overflow-y-auto flex flex-col space-y-3" ref={chatBoxRef}>
         {messages.length === 0 && (
           <p className="text-sm text-gray-400 m-auto">
             Analyzing your cliff situation…
