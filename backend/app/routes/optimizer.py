@@ -19,6 +19,9 @@ _IRA_LIMIT = 7000.0
 _K401_LIMIT = 23500.0
 _FSA_DEPENDENT_CARE_LIMIT = 5000.0
 
+# Realistic contribution cap for low-income workers
+_MAX_CONTRIBUTION_PCT = 0.15
+
 
 def _max_pretax_reduction(gross: float, employment_type: str, has_children: bool) -> float:
     """Total pre-tax contributions available to reduce reportable income."""
@@ -100,18 +103,16 @@ async def optimize(req: OptimizeRequest):
                 break
             # else: too far above to bridge with available contributions → keep scanning
 
-        elif gross >= threshold - 2000.0:
-            # Scenario B — approaching this threshold (within $2,000)
+        elif gross >= threshold - 10000.0:
+            # Scenario B — approaching this threshold (within $10,000)
             scenario = "B"
             target_program = program
             target_threshold = threshold
             contribution_needed = threshold - gross + 500.0
-            # Benefit that would be lost if the cliff is crossed
-            benefits_at_stake = _benefit_at_threshold(
-                program, threshold, household_size, state, has_children
-            )
+            # Current benefit value for this program (matches benefits table)
+            benefits_at_stake = current_benefits.get(program.lower(), 0.0)
             break
-        # else: safely below (> $2,000 gap) — continue to next lower threshold
+        # else: safely below (> $10,000 gap) — continue to next lower threshold
 
     # ── Build steps ───────────────────────────────────────────────────────
     steps: list[OptimizationStep] = []
@@ -136,31 +137,64 @@ async def optimize(req: OptimizeRequest):
         ))
 
     elif scenario == "B" and contribution_needed > 0:
-        steps.append(OptimizationStep(
-            action=(
-                f"Contribute ${contribution_needed:,.0f}/year (pre-tax) to {account} "
-                f"to stay $500 below the ${target_threshold:,.0f} (gross income limit) "
-                f"{target_program} cliff and protect ${benefits_at_stake:,.0f} "
-                f"(annual value) in benefits"
-            ),
-            income_adjustment=-contribution_needed,
-            benefits_preserved=round(benefits_at_stake, 2),
-            net_gain=round(benefits_at_stake, 2),
-            priority="high",
-        ))
+        max_affordable = gross * _MAX_CONTRIBUTION_PCT
+        partial_protection = contribution_needed > max_affordable
+        affordable_contribution = min(contribution_needed, max_affordable)
+        new_reportable = gross - affordable_contribution
+
+        if new_reportable < target_threshold:
+            # Contribution (full or capped at 15%) still clears the cliff.
+            # net_gain = tax savings only (benefits are retained, not gained).
+            new_net_b = compute_net_income(new_reportable, state, household_size, employment_type)
+            take_home_cost = current_net - new_net_b   # positive: what contributing costs post-tax
+            step_net_gain = affordable_contribution - take_home_cost  # tax savings
+
+            if partial_protection:
+                action_text = (
+                    f"Contribute ${affordable_contribution:,.0f}/year (pre-tax) to {account} "
+                    f"— capped at 15% of gross income. Reduces reportable income to "
+                    f"${new_reportable:,.0f} (pre-tax), below the "
+                    f"${target_threshold:,.0f} (gross income limit) {target_program} cliff, "
+                    f"protecting ${benefits_at_stake:,.0f} (annual value) in benefits"
+                )
+            else:
+                action_text = (
+                    f"Contribute ${affordable_contribution:,.0f}/year (pre-tax) to {account} "
+                    f"to stay $500 below the ${target_threshold:,.0f} (gross income limit) "
+                    f"{target_program} cliff and protect ${benefits_at_stake:,.0f} "
+                    f"(annual value) in benefits"
+                )
+
+            steps.append(OptimizationStep(
+                action=action_text,
+                income_adjustment=-affordable_contribution,
+                benefits_preserved=round(benefits_at_stake, 2),
+                net_gain=round(step_net_gain, 2),
+                priority="high",
+            ))
+        else:
+            # Even 15% contribution can't clear the cliff gap → income smoothing only.
+            scenario = "B_SMOOTHING"
 
     # ── Optimized totals ──────────────────────────────────────────────────
     if steps:
-        final_income = gross - sum(abs(s.income_adjustment) for s in steps)
-        opt_benefits = compute_benefits_bundle(final_income, state, household_size, has_children)
-        opt_net = compute_net_income(final_income, state, household_size, employment_type)
-        optimized_total = opt_net + opt_benefits["total"]
-        total_net_gain = optimized_total - current_total
-        benefits_retained = sum(s.benefits_preserved for s in steps)
+        if scenario == "A":
+            # Scenario A: accounting view — actual change in (net + benefits)
+            final_income = gross - sum(abs(s.income_adjustment) for s in steps)
+            opt_benefits = compute_benefits_bundle(final_income, state, household_size, has_children)
+            opt_net = compute_net_income(final_income, state, household_size, employment_type)
+            optimized_total = opt_net + opt_benefits["total"]
+            total_net_gain = optimized_total - current_total
+            benefits_retained = sum(s.benefits_preserved for s in steps)
+        else:
+            # Scenario B: optimized_total = take-home net + benefits retained + tax savings
+            total_net_gain = sum(s.net_gain for s in steps)
+            benefits_retained = sum(s.benefits_preserved for s in steps)
+            optimized_total = current_net + benefits_retained + total_net_gain
     else:
         optimized_total = current_total
         total_net_gain = 0.0
-        benefits_retained = current_benefits["total"]
+        benefits_retained = benefits_at_stake if scenario == "B_SMOOTHING" else current_benefits["total"]
 
     # ── Strategy label + summary ──────────────────────────────────────────
     if scenario == "A" and steps:
@@ -176,12 +210,41 @@ async def optimize(req: OptimizeRequest):
 
     elif scenario == "B" and steps:
         strategy_name = "CLIFF PROTECTION STRATEGY"
+        max_affordable = gross * _MAX_CONTRIBUTION_PCT
+        partial_protection = contribution_needed > max_affordable
+        affordable_contribution = min(contribution_needed, max_affordable)
+
+        if partial_protection:
+            summary = (
+                f"Your income is ${target_threshold - gross:,.0f} below the "
+                f"{target_program} cliff at ${target_threshold:,.0f} (gross income limit). "
+                f"Contributing ${affordable_contribution:,.0f}/year (pre-tax) to {account} "
+                f"(15% of gross income cap) reduces your reportable income below the cliff "
+                f"threshold, protecting ${benefits_at_stake:,.0f} (annual value) in benefits "
+                f"with a net value of ${total_net_gain:+,.0f} (post-tax) per year."
+            )
+        else:
+            summary = (
+                f"Your income is ${target_threshold - gross:,.0f} below the "
+                f"{target_program} cliff at ${target_threshold:,.0f} (gross income limit). "
+                f"Contributing ${contribution_needed:,.0f}/year (pre-tax) to a {account} "
+                f"keeps you $500 safely below the threshold and protects "
+                f"${benefits_at_stake:,.0f} (annual value) in annual benefits."
+            )
+
+    elif scenario == "B_SMOOTHING":
+        strategy_name = "INCOME SMOOTHING STRATEGY"
         summary = (
             f"Your income is ${target_threshold - gross:,.0f} below the "
-            f"{target_program} cliff at ${target_threshold:,.0f} (gross income limit). "
-            f"Contributing ${contribution_needed:,.0f}/year (pre-tax) to a {account} "
-            f"keeps you $500 safely below the threshold and protects "
-            f"${benefits_at_stake:,.0f} (annual value) in annual benefits."
+            f"{target_program} cliff at ${target_threshold:,.0f} (gross income limit), "
+            f"protecting ${benefits_at_stake:,.0f} (annual value) in benefits. "
+            f"The safest strategy at your income level is to track your monthly earnings "
+            f"carefully and defer income in high-earning months to avoid accidentally "
+            f"crossing the threshold. Even contributing 15% "
+            f"(${gross * _MAX_CONTRIBUTION_PCT:,.0f}/year pre-tax) would not fully close "
+            f"the ${target_threshold - gross:,.0f} gap to the cliff. "
+            f"Defer client payments or projects to the next calendar year if your gross "
+            f"income approaches ${target_threshold:,.0f} in a high-earning month."
         )
 
     else:

@@ -218,23 +218,25 @@ def get_program_thresholds(household_size: int, state: str) -> Dict[str, float]:
 # Cliff point detection
 # ---------------------------------------------------------------------------
 
-def _cliff_description(prev: Dict, curr: Dict) -> str:
+def _cliff_description(exact_below: Dict, curr: Dict) -> str:
+    """
+    exact_below: computed at cliff_income - 1 (precise threshold point).
+    curr:        computed at cliff_income (just above threshold).
+    """
     losses = []
     for prog in ("snap", "medicaid", "housing", "childcare"):
-        diff = prev[prog] - curr[prog]
+        diff = exact_below[prog] - curr[prog]
         if diff > 200:
             losses.append(f"{prog.upper()} worth ${diff:,.0f}/yr (annual value)")
 
-    comp_drop = prev["total_compensation"] - curr["total_compensation"]
-    income_gain = curr["gross_income"] - prev["gross_income"]
+    comp_drop = exact_below["total_compensation"] - curr["total_compensation"]
     income_level = curr["gross_income"]
 
     if losses:
         label = ", ".join(losses)
         return (
             f"Cliff at ${income_level:,.0f} (gross income limit): losing {label}. "
-            f"Net compensation drops ${comp_drop:,.0f} (post-tax) despite earning "
-            f"${income_gain:,.0f} more (pre-tax)."
+            f"Net compensation drops ${comp_drop:,.0f} (post-tax) upon crossing this threshold."
         )
     return (
         f"Benefits cliff at ${income_level:,.0f} (gross income limit): "
@@ -251,6 +253,8 @@ def detect_cliff_points(
     """
     Scan income range in $500 steps and detect points where
     total compensation decreases despite gross income increasing.
+    For each cliff, exact values are computed at threshold-1 so that
+    benefits_lost and net_change match the optimizer's _benefit_at_threshold.
     Returns cliff dicts sorted by income_level.
     """
     curve = build_income_curve(
@@ -261,12 +265,27 @@ def detect_cliff_points(
         prev, curr = curve[i - 1], curve[i]
         comp_drop = prev["total_compensation"] - curr["total_compensation"]
         if comp_drop > 300:   # compensation fell by >$300 at this $500 step
-            benefits_lost = prev["total_benefits"] - curr["total_benefits"]
+            # Compute exact values at the cliff threshold - 1 for consistency
+            # with the optimizer's _benefit_at_threshold (which uses threshold - 1).
+            cliff_income = curr["gross_income"]
+            eb = compute_benefits_bundle(cliff_income - 1, state, household_size, has_children)
+            eb_net = compute_net_income(cliff_income - 1, state, household_size, employment_type)
+            exact_below = {
+                "gross_income":       cliff_income - 1,
+                "snap":               eb["snap"],
+                "medicaid":           eb["medicaid"],
+                "housing":            eb["housing"],
+                "childcare":          eb["childcare"],
+                "total_benefits":     eb["total"],
+                "total_compensation": round(eb_net + eb["total"], 2),
+            }
+            benefits_lost = round(max(0.0, exact_below["total_benefits"] - curr["total_benefits"]), 2)
+            net_change    = round(curr["total_compensation"] - exact_below["total_compensation"], 2)
             cliffs.append({
-                "income_level": curr["gross_income"],
-                "benefits_lost": round(max(0.0, benefits_lost), 2),
-                "net_change": round(curr["total_compensation"] - prev["total_compensation"], 2),
-                "description": _cliff_description(prev, curr),
+                "income_level": cliff_income,
+                "benefits_lost": benefits_lost,
+                "net_change":    net_change,
+                "description":   _cliff_description(exact_below, curr),
             })
     return cliffs
 
@@ -393,14 +412,14 @@ def run_monte_carlo(
         n_simulations
     """
     sigma = INCOME_VOLATILITY.get(employment_type, 0.12)
-    monthly_mean = gross_income / 12.0
 
+    # Model annual income directly as a single lognormal draw.
+    # sigma is the annual CV (coefficient of variation), e.g. 0.25 = 25% annual volatility.
     # Lognormal: E[X] = exp(mu + sigma²/2) → mu = log(mean) - sigma²/2
-    mu = np.log(monthly_mean) - 0.5 * sigma ** 2
+    mu = np.log(gross_income) - 0.5 * sigma ** 2
 
     rng = np.random.default_rng(42)
-    monthly_draws = rng.lognormal(mean=mu, sigma=sigma, size=(n_sims, 12))
-    annual_incomes = monthly_draws.sum(axis=1)   # shape: (n_sims,)
+    annual_incomes = rng.lognormal(mean=mu, sigma=sigma, size=n_sims)
 
     cliff_pts = detect_cliff_points(state, household_size, employment_type, has_children)
     cliff_thresholds = [c["income_level"] for c in cliff_pts]

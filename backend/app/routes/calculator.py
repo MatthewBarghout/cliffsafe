@@ -35,12 +35,13 @@ def _build_recommendation(
 
     nearest = min(cliff_points, key=lambda c: abs(c["income_level"] - gross))
     gap = nearest["income_level"] - gross
+    net_cost = abs(nearest["net_change"])
 
     if -500 <= gap <= 0:
         return (
             f"You are right at the ${nearest['income_level']:,.0f} (gross income limit) cliff — "
-            f"earning even slightly more could eliminate ${nearest['benefits_lost']:,.0f}/yr "
-            f"(annual value) in benefits. Consider pre-tax deductions (Traditional IRA, HSA, 401k) "
+            f"earning even slightly more could cost you ${net_cost:,.0f}/yr "
+            f"(post-tax) in total compensation. Consider pre-tax deductions (Traditional IRA, HSA, 401k) "
             f"to reduce your taxable income and preserve eligibility."
         )
 
@@ -48,10 +49,10 @@ def _build_recommendation(
         return (
             f"Warning: you are ${gap:,.0f} below a cliff at "
             f"${nearest['income_level']:,.0f} (gross income limit). "
-            f"A raise or extra hours could cost you ${nearest['benefits_lost']:,.0f}/yr "
-            f"(annual value) in benefits. Your effective marginal rate is {emr * 100:.0f}% — "
+            f"A raise or extra hours could cost you ${net_cost:,.0f}/yr "
+            f"(post-tax) in total compensation. Your effective marginal rate is {emr * 100:.0f}% — "
             f"meaning each extra dollar you earn (pre-tax) only nets you "
-            f"{max(0, (1 - emr) * 100):.0f}¢ (post-tax) in real purchasing power. "
+            f"{max(0, (1 - emr) * 100):.0f}¢ (post-tax). "
             f"Use the Optimizer to find the safest income target."
         )
 
@@ -62,10 +63,10 @@ def _build_recommendation(
             "with income. Focus on maximizing pre-tax contributions to reduce your tax burden."
         )
 
-    biggest = max(cliff_points, key=lambda c: c["benefits_lost"])
+    biggest = max(cliff_points, key=lambda c: abs(c["net_change"]))
     return (
         f"Your biggest cliff is at ${biggest['income_level']:,.0f} (gross income limit) — "
-        f"crossing it eliminates ${biggest['benefits_lost']:,.0f}/yr (annual value) in benefits. "
+        f"crossing it costs you ${abs(biggest['net_change']):,.0f}/yr (post-tax) in total compensation. "
         f"Your current effective marginal rate is {emr * 100:.0f}%."
     )
 
@@ -125,14 +126,44 @@ async def calculate(req: CalculationRequest):
             )
         )
 
-    # Cliff points
+    # Cliff points — post-process for program detection and current-relative values
     raw_cliffs = detect_cliff_points(state, hs, et, has_children)
+    for cliff in raw_cliffs:
+        cliff_income = cliff["income_level"]
+        b_above = compute_benefits_bundle(cliff_income, state, hs, has_children)
+        b_below = compute_benefits_bundle(cliff_income - 1, state, hs, has_children)
+        # Detect which program drops at this threshold
+        if b_below["medicaid"] - b_above["medicaid"] > 200:
+            cliff["program"] = "Medicaid"
+        elif b_below["snap"] - b_above["snap"] > 200:
+            cliff["program"] = "SNAP"
+        elif b_below["housing"] - b_above["housing"] > 200:
+            cliff["program"] = "Housing"
+        elif b_below["childcare"] - b_above["childcare"] > 200:
+            cliff["program"] = "Childcare"
+        else:
+            cliff["program"] = "Benefits"
+        # For cliffs above current income: benefits_lost = current benefit value (matches benefits table)
+        if cliff_income > gross:
+            cliff["benefits_lost"] = round(max(0.0, benefits["total"] - b_above["total"]), 2)
+            above_net = compute_net_income(cliff_income, state, hs, et)
+            cliff["net_change"] = round((above_net + b_above["total"]) - total_comp, 2)
+            # Regenerate description so the dollar amounts inside it match the header values
+            program_label = cliff["program"]
+            cliff["description"] = (
+                f"Cliff at ${cliff_income:,.0f} (gross income limit): crossing this threshold "
+                f"would cost you ${cliff['benefits_lost']:,.0f}/yr (annual value) in "
+                f"{program_label} benefits. Your total compensation drops "
+                f"${abs(cliff['net_change']):,.0f} (post-tax) versus your current income."
+            )
+
     cliff_points = [
         CliffPoint(
             income_level=c["income_level"],
             benefits_lost=c["benefits_lost"],
             net_change=c["net_change"],
             description=c["description"],
+            program=c.get("program", ""),
         )
         for c in raw_cliffs
     ]

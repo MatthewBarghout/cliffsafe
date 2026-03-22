@@ -155,7 +155,7 @@ function StepCard({ step, index }) {
               </strong>
             </span>
             <span>
-              Benefits retained:{" "}
+              Benefits retained (post-tax):{" "}
               <strong style={{ fontWeight: 600, color: T.green }}>{fmt(step.benefits_preserved)}</strong>
             </span>
             <span>
@@ -424,8 +424,8 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
           >
             {/* Metrics */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-              <GainMetric label="Current net"    value={fmt(result.current_net)} sub="post-tax" />
-              <GainMetric label="Optimized net"  value={fmt(result.optimized_net)} accent={T.green} sub="post-tax + benefits retained" />
+              <GainMetric label="Total compensation"  value={fmt(result.current_net)} sub="post-tax + benefits" />
+              <GainMetric label="Optimized total"    value={fmt(result.optimized_net)} accent={T.green} sub="post-tax + benefits" />
               <GainMetric
                 label="Net gain"
                 value={result.net_gain >= 0 ? `+${fmt(result.net_gain)}` : fmt(result.net_gain)}
@@ -438,7 +438,7 @@ export default function OptimizerCard({ formData, optimizeIncome }) {
                 label={result.net_gain > 0 ? "Benefits retained" : "Benefits at risk"}
                 value={fmt(result.benefits_retained)}
                 accent={T.blue}
-                sub={result.net_gain === 0 ? "if cliff crossed (annual value)" : "annual value"}
+                sub={result.net_gain === 0 ? "if cliff crossed · post-tax annual value" : "post-tax · annual value"}
               />
             </div>
 

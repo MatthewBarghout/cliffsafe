@@ -218,7 +218,7 @@ function CliffCard({ cp, index }) {
       variants={STAGGER.item}
       style={{
         borderLeft: `3px solid ${palette.border}`,
-        background: palette.bg,
+        background: "rgba(226,75,74,0.14)",
         borderRadius: "0 var(--border-radius-md) var(--border-radius-md) 0",
         padding: "14px 16px",
         display: "flex",
@@ -514,7 +514,7 @@ export default function ResultsPanel({ data, monteCarlo }) {
           <MetricCard
             label="Total compensation"
             value={fmt(totalCompensation)}
-            sub="post-tax + benefits"
+            sub="take-home pay + benefits"
             accent="#1D9E75"
           />
           <MetricCard

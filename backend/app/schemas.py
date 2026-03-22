@@ -70,6 +70,7 @@ class CliffPoint(BaseModel):
     benefits_lost: float
     net_change: float
     description: str
+    program: str = ""
 
 
 class NetIncomeCurvePoint(BaseModel):
