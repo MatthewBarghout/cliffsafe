@@ -4,22 +4,54 @@ import { useRef } from "react";
 
 const FEATURES = [
   {
-    icon: "📉",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M4 22 C8 18 11 14 14 10 C16 7 17.5 5.5 19 5" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 5 L19 17" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M19 17 C21 17 23 16.5 24 16" stroke="#c0392b" strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="19" cy="5" r="2" fill="#c0392b"/>
+        <line x1="4" y1="22" x2="24" y2="22" stroke="#ddd6cc" strokeWidth="1" strokeDasharray="3 3"/>
+      </svg>
+    ),
     title: "Detect Your Cliff",
     desc: "See exactly where a raise could cost you more in lost benefits than you'd gain in pay.",
   },
   {
-    icon: "🧮",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect x="4" y="4" width="20" height="20" rx="3" stroke="#1a1a1a" strokeWidth="1.6" fill="none"/>
+        <line x1="9" y1="4" x2="9" y2="24" stroke="#ddd6cc" strokeWidth="1"/>
+        <line x1="4" y1="10" x2="24" y2="10" stroke="#ddd6cc" strokeWidth="1"/>
+        <rect x="11" y="12" width="4" height="8" rx="1" fill="#c0392b" opacity="0.7"/>
+        <rect x="16" y="15" width="4" height="5" rx="1" fill="#c0392b" opacity="0.4"/>
+        <rect x="6"  y="14" width="4" height="6" rx="1" fill="#c0392b"/>
+      </svg>
+    ),
     title: "Run the Numbers",
-    desc: "Enter your income, state, and household size — get a full benefits breakdown in seconds.",
+    desc: "Enter your income, state, and household size to get a full benefits breakdown in seconds.",
   },
   {
-    icon: "🛡️",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 3 L5 7 L5 15 C5 19.5 9 23.5 14 25 C19 23.5 23 19.5 23 15 L23 7 Z"
+          stroke="#1a1a1a" strokeWidth="1.6" fill="none" strokeLinejoin="round"/>
+        <path d="M9.5 14 L12.5 17 L18.5 11" stroke="#1D9E75" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
     title: "Optimize Safely",
-    desc: "Get concrete strategies — pre-tax contributions, FSAs, and more — to stay on the safe side of the cliff.",
+    desc: "Get concrete strategies like pre-tax contributions, FSAs, and more to stay on the safe side of the cliff.",
   },
   {
-    icon: "💬",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M5 8 C5 6.3 6.3 5 8 5 L20 5 C21.7 5 23 6.3 23 8 L23 16 C23 17.7 21.7 19 20 19 L16 19 L12 23 L12 19 L8 19 C6.3 19 5 17.7 5 16 Z"
+          stroke="#1a1a1a" strokeWidth="1.6" fill="none" strokeLinejoin="round"/>
+        <circle cx="10" cy="12" r="1.2" fill="#1a1a1a"/>
+        <circle cx="14" cy="12" r="1.2" fill="#1a1a1a"/>
+        <circle cx="18" cy="12" r="1.2" fill="#1a1a1a"/>
+      </svg>
+    ),
     title: "Ask an Advisor",
     desc: "Chat with a Gemini-powered advisor that explains your situation in plain language.",
   },
@@ -250,7 +282,7 @@ export default function Home() {
               }}
             >
               CliffSafe shows you exactly where earning more triggers a loss in government benefits
-              — and builds a plan to keep you on the safe side.
+              and builds a plan to keep you on the safe side.
             </motion.p>
 
             {/* CTAs */}
@@ -288,7 +320,7 @@ export default function Home() {
                   cursor: "pointer",
                 }}
               >
-                How it works
+                How It Works
               </button>
             </motion.div>
 
@@ -393,7 +425,7 @@ export default function Home() {
                 className="feature-card"
                 style={{ padding: "1.8rem 1.4rem", borderRadius: "12px" }}
               >
-                <div style={{ fontSize: "2.2rem", marginBottom: "1rem" }}>{f.icon}</div>
+                <div style={{ marginBottom: "1rem" }}>{f.icon}</div>
                 <h3
                   className="hero-font"
                   style={{
@@ -426,20 +458,47 @@ export default function Home() {
             <p style={{ color: "#666", marginBottom: "1.4rem", fontSize: "0.95rem" }}>
               Ready to see where your cliff is?
             </p>
-            <button
-              onClick={() => navigate("/calculator")}
-              className="cta-primary body-font"
-              style={{
-                padding: "0.9rem 2.4rem",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: 600,
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Get Started — It's Free →
-            </button>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                onClick={() => navigate("/calculator")}
+                className="cta-primary body-font"
+                style={{
+                  padding: "0.9rem 2.4rem",
+                  borderRadius: "8px",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Get Started — It's Free →
+              </button>
+              <button
+                onClick={() => navigate("/how-it-works")}
+                className="body-font"
+                style={{
+                  padding: "0.9rem 2.4rem",
+                  borderRadius: "8px",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  background: "white",
+                  border: "1.5px solid #d4cdc5",
+                  color: "#1a1a1a",
+                  transition: "border-color 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#c0392b";
+                  e.currentTarget.style.boxShadow = "0 2px 12px rgba(192,57,43,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#d4cdc5";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                Learn More
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>

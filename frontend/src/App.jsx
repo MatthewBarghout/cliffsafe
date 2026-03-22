@@ -9,6 +9,7 @@ function ScrollToTop() {
 import Home from "./pages/Home";
 import Calculator from "./pages/Calculator";
 import Results from "./pages/Results";
+import HowItWorks from "./pages/HowItWorks";
 
 function Nav() {
   const { pathname } = useLocation();
@@ -164,6 +165,12 @@ function Nav() {
             >
               Calculator
             </Link>
+            <Link
+              to="/how-it-works"
+              className={`cs-nav-link${pathname === "/how-it-works" ? " active" : ""}`}
+            >
+              Learn More
+            </Link>
             <Link to="/calculator" className="cs-nav-cta">
               Get Started →
             </Link>
@@ -181,9 +188,10 @@ export default function App() {
       <ScrollToTop />
       <Nav />
       <Routes>
-        <Route path="/"           element={<Home />} />
-        <Route path="/calculator" element={<Calculator />} />
-        <Route path="/results"    element={<Results />} />
+        <Route path="/"             element={<Home />} />
+        <Route path="/calculator"   element={<Calculator />} />
+        <Route path="/results"      element={<Results />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
       </Routes>
     </BrowserRouter>
   );
