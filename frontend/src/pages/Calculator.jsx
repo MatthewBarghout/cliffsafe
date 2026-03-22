@@ -192,7 +192,7 @@ export default function Calculator() {
               fontSize: "0.95rem", color: "#777", lineHeight: 1.65, margin: 0,
               fontFamily: "'DM Sans', system-ui, sans-serif",
             }}>
-              Enter your details to see exactly where earning more starts costing you — and how much.
+              Enter your details to see exactly where earning more starts costing you and how much.
             </p>
 
 
