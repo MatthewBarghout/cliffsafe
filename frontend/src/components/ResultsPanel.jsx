@@ -538,8 +538,8 @@ export default function ResultsPanel({ data, monteCarlo }) {
             }
             sub={
               monteCarlo
-                ? "Monte Carlo · 1,000 sims · see below"
-                : "Running 1,000 simulations…"
+                ? "Monte Carlo · 10,000 sims · see below"
+                : "Running 10,000 simulations…"
             }
             accent={
               monteCarlo
