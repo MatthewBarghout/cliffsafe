@@ -209,9 +209,28 @@ const PROGRAM_COLORS = {
   default: { border: "#888780", bg: "rgba(136,135,128,0.07)", text: "#5F5E5A" },
 };
 
-function CliffCard({ cp, index }) {
+/* Helper to find matching benefit by program name (handles variations like "CCAP" vs "CCAP (childcare)") */
+function findMatchingBenefit(benefits, programName) {
+  if (!benefits || !programName) return null;
+  const normalizedProgram = programName.toLowerCase();
+  return benefits.find((b) => {
+    const normalizedName = b.name.toLowerCase();
+    return (
+      normalizedName === normalizedProgram ||
+      normalizedName.startsWith(normalizedProgram) ||
+      normalizedProgram.startsWith(normalizedName.split(" ")[0])
+    );
+  });
+}
+
+function CliffCard({ cp, index, benefits }) {
   const palette = PROGRAM_COLORS[cp.program] ?? PROGRAM_COLORS.default;
   const isNegative = cp.net_change < 0;
+
+  // Use benefits array as source of truth to ensure consistency with benefits table
+  const matchingBenefit = findMatchingBenefit(benefits, cp.program);
+  const benefitValue = matchingBenefit?.annual_value ?? cp.benefits_lost;
+  const incomeThreshold = matchingBenefit?.eligibility_threshold ?? cp.income_level;
 
   return (
     <motion.div
@@ -257,14 +276,14 @@ function CliffCard({ cp, index }) {
               color: palette.text,
             }}
           >
-            at {fmt(cp.income_level)}
+            at {fmt(incomeThreshold)}
           </span>
         </div>
         <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
           <span style={{ color: "var(--color-text-secondary)" }}>
-            Benefits lost:{" "}
+            Lost:{" "}
             <strong style={{ color: palette.text, fontWeight: 500 }}>
-              {fmt(cp.benefits_lost)} (annual value)
+              {fmt(benefitValue)} (pre-tax annual)
             </strong>
           </span>
           <span
@@ -314,7 +333,7 @@ function BenefitsTable({ benefits }) {
               letterSpacing: "0.05em",
             }}
           >
-            {["Program", "Monthly (post-tax)", "Annual (post-tax)", "Income limit (gross)", "Status"].map(
+            {["Program", "Monthly (pre-tax)", "Annual (pre-tax)", "Income limit (gross)", "Status"].map(
               (h) => (
                 <th
                   key={h}
@@ -512,15 +531,15 @@ export default function ResultsPanel({ data, monteCarlo }) {
             sub="pre-tax"
           />
           <MetricCard
-            label="Total compensation"
+            label="Total current compensation"
             value={fmt(totalCompensation)}
-            sub="take-home pay + benefits"
+            sub="pre-tax income + benefits"
             accent="#1D9E75"
           />
           <MetricCard
             label="Benefits at risk"
             value={fmt(d.total_benefits)}
-            sub="annual value"
+            sub="pre-tax annual value"
             accent="#E24B4A"
           />
           <MetricCard
@@ -574,7 +593,7 @@ export default function ResultsPanel({ data, monteCarlo }) {
             <SectionHeader title="Cliff points" count={d.cliff_points.length} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {d.cliff_points.map((cp, i) => (
-                <CliffCard key={i} cp={cp} index={i} />
+                <CliffCard key={i} cp={cp} index={i} benefits={d.benefits} />
               ))}
             </div>
           </div>

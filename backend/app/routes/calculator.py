@@ -153,7 +153,7 @@ async def calculate(req: CalculationRequest):
             cliff["description"] = (
                 f"Cliff at ${cliff_income:,.0f} (gross income limit): crossing this threshold "
                 f"would cost you ${cliff['benefits_lost']:,.0f}/yr (annual value) in "
-                f"{program_label} benefits. Your total compensation drops "
+                f"{program_label}. Your total compensation drops "
                 f"${abs(cliff['net_change']):,.0f} (post-tax) versus your current income."
             )
 
